@@ -3404,3 +3404,94 @@ ol {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ---------- order sheet: a batch of like orders on one form ---------- */
+
+.sheet.sheet-batch {
+  width: min(1040px, 96vw);
+}
+
+.batch {
+  display: grid;
+  gap: 0;
+  margin: 6px 0 8px;
+  border-top: 1px solid var(--ink);
+}
+
+.batch-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 215px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--ink-soft);
+}
+
+.batch-unit strong {
+  display: block;
+  font-family: var(--f-display);
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  line-height: 1.15;
+}
+
+.batch-unit em {
+  font-family: var(--f-fell);
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.batch-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 7px 2px;
+  font-family: var(--f-body);
+  font-size: 13.5px;
+  white-space: nowrap;
+  color: var(--ink);
+  background: rgba(255, 252, 240, 0.55);
+  border: 1px solid var(--ink-soft);
+  border-radius: 1px;
+  cursor: pointer;
+}
+
+.chip small {
+  font-family: var(--f-type);
+  font-size: 10.5px;
+  color: var(--ink-faint);
+}
+
+.chip:hover:not(:disabled) {
+  background: #fffaea;
+  border-color: var(--ink);
+}
+
+.chip.is-on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #f4ebcf;
+}
+
+.chip.is-on small {
+  color: #d8c79a;
+}
+
+.chip:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.sheet-batch .sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}

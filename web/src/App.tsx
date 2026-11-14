@@ -96,6 +96,11 @@ export default function App() {
 
   const head = myPending[0];
   const headCommander = head ? commanders.find((c) => c.id === head.commanderId) : undefined;
+  // Like orders for one commander's separate units (Meade's reserves) are answered together on one sheet.
+  const batch = useMemo(
+    () => (head && head.kind === 'reinforcement' && head.unitId ? myPending.filter((p) => p.commanderId === head.commanderId && p.kind === 'reinforcement' && !!p.unitId) : []),
+    [head, myPending],
+  );
 
   return (
     <MotionConfig reducedMotion="user">
@@ -139,7 +144,7 @@ export default function App() {
           </footer>
 
           {(head || reading) && !showTitle && (
-            <OrderSheet pending={head} reading={reading} onReading={setReading} more={Math.max(0, myPending.length - 1)} commander={headCommander} clientId={clientId} clock={state.clock} post={post} />
+            <OrderSheet pending={head} reading={reading} onReading={setReading} more={Math.max(0, myPending.length - 1)} batch={batch} commander={headCommander} clientId={clientId} clock={state.clock} post={post} />
           )}
           {explain && <ExplainCard decision={explain} post={post} onClose={closeExplain} />}
           {showEnd && state.phase === 'ended' && !explain && <EndPlate state={state} post={post} onClose={closeEnd} />}

@@ -11,6 +11,8 @@ interface Props {
   reading: Reading | null;
   onReading: (r: Reading | null) => void;
   more: number;
+  /** Every order of the same kind waiting on this commander, so a batch can be answered on one sheet. */
+  batch?: PendingChoice[];
   commander?: Commander;
   clientId: string;
   clock: string;
@@ -24,19 +26,47 @@ export interface Reading {
 }
 
 /** A field order form: pick a legal order, or write one and let Drex read it. */
-export function OrderSheet({ pending, reading, onReading, more, commander, clientId, clock, post }: Props) {
+export function OrderSheet({ pending, reading, onReading, more, batch, commander, clientId, clock, post }: Props) {
   const setReading = onReading;
   const pendingId = pending?.id;
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const box = useRef<HTMLTextAreaElement>(null);
+  // One sheet for a batch of like orders (Meade placing each of his reserves): pick for all, send once.
+  const group = batch && batch.length > 1 ? batch : null;
+  const groupKey = group ? group.map((g) => g.id).join(',') : '';
+  const [picks, setPicks] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setText('');
     setError(null);
     setBusy(false);
   }, [pendingId]);
+
+  // Start each line of a batch on what Drex thinks the real commander would have done.
+  useEffect(() => {
+    if (!group) return;
+    const next: Record<string, string> = {};
+    for (const g of group) next[g.id] = [...(g.options ?? [])].sort((a, b) => (b.p ?? 0) - (a.p ?? 0))[0]?.id ?? '';
+    setPicks(next);
+    setBusy(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupKey]);
+
+  const sendBatch = async () => {
+    if (busy || !group) return;
+    setBusy(true);
+    setError(null);
+    for (const g of group) {
+      const r = await post('choose', { pendingId: g.id, optionId: picks[g.id] ?? g.options?.[0]?.id, clientId });
+      if (r === null) {
+        setError('An order did not reach headquarters. Try again.');
+        setBusy(false);
+        return;
+      }
+    }
+  };
 
   const choose = async (optionId: string) => {
     if (busy || !pending) return;
@@ -95,6 +125,57 @@ export function OrderSheet({ pending, reading, onReading, more, commander, clien
   }
 
   if (!pending) return null;
+
+  if (group) {
+    const top = (g: PendingChoice) => [...(g.options ?? [])].sort((a, b) => (b.p ?? 0) - (a.p ?? 0))[0]?.id;
+    const changed = group.filter((g) => picks[g.id] && picks[g.id] !== top(g)).length;
+    return (
+      <div className="sheet-wrap">
+        <motion.section key={groupKey} className={`sheet sheet-batch side-${commander?.side ?? 'union'}`} initial={{ y: 40, opacity: 0, rotate: 1.4 }} animate={{ y: 0, opacity: 1, rotate: 0.3 }} transition={{ type: 'spring', stiffness: 240, damping: 24 }} aria-label="Orders for the reserves">
+          <header className="sheet-head">
+            {commander && <Portrait commander={commander} size={54} />}
+            <div>
+              <p className="sheet-kicker">Field order · {clock12(clock)}</p>
+              <h2>{commander ? `You command as ${commander.name}` : 'You command'}</h2>
+              <p className="sheet-sub">
+                {commander ? `${commander.rank} · ${commander.role} · ` : ''}
+                {group.length} bodies of troops await your word
+              </p>
+            </div>
+          </header>
+          <p className="sheet-question">Where does each go this half hour?</p>
+          <div className="batch">
+            {group.map((g) => {
+              const about = /\((\d[^)]*)\)/.exec(g.question)?.[1]; // "1245 men, in reserve at Baltimore Pike"
+              return (
+                <div key={g.id} className="batch-row">
+                  <div className="batch-unit">
+                    <strong>{g.unitName ?? 'Reserve'}</strong>
+                    {about && <em>{about}</em>}
+                  </div>
+                  <div className="batch-options" role="radiogroup" aria-label={`Orders for ${g.unitName ?? 'this unit'}`}>
+                    {(g.options ?? []).map((o) => (
+                      <button key={o.id} type="button" role="radio" aria-checked={picks[g.id] === o.id} className={`chip ${picks[g.id] === o.id ? 'is-on' : ''}`} disabled={busy} title={o.description} onClick={() => setPicks((prev) => ({ ...prev, [g.id]: o.id }))}>
+                        {o.label.replace(/^To /, '')}
+                        <small>{pct(o.p)}</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="sheet-note">Each line starts on what Drex reads as the real commander's likeliest choice; the small figure is its probability. Change any you like, then send them together.</p>
+          <div className="sheet-actions">
+            <button type="button" className="btn-ink" disabled={busy} onClick={() => void sendBatch()} autoFocus>
+              {busy ? 'Riding to headquarters…' : changed ? `Send these orders (${changed} of your own)` : 'Send these orders'}
+            </button>
+          </div>
+          {error && <p className="sheet-error">{error}</p>}
+        </motion.section>
+      </div>
+    );
+  }
 
   return (
     <div className="sheet-wrap">
