@@ -89,6 +89,11 @@ function ControlsImpl({ state, connected, awaitingMe, post, onShowEnd, onShowTit
       </div>
 
       <div className="bar-end">
+        {ended && state.canFightOn && (
+          <button type="button" className="btn-seal" onClick={() => post('continue', {})} title="Keep fighting past dusk until the field is decided">
+            Fight on
+          </button>
+        )}
         {ended && (
           <button type="button" className="btn-ink" onClick={onShowEnd}>
             The field at nightfall

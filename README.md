@@ -66,6 +66,7 @@ can be tried anywhere.
 - **Let history run** plays the afternoon; **Take command** on any general's panel puts you in his place. A general you hold is asked every half hour (Lee, for instance, may keep or change the plan of attack, and orders his own brigades). When it is your turn an order sheet opens: pick one of the choices (the one marked "likely in 1863" is what Drex expects the real general to do), or write the order in your own words.
 - Tap the crossed sabres on a fight to see both sides; tap "why?" on a decision to see which traits moved it.
 - At dusk, **The field at nightfall** shows the ground against 1863, the council of war and Intern's after-action report.
+- History stops at dusk. If the field is not decided by then, **Fight on** keeps the battle going until one side holds every key position, one side can no longer fight, or both stand still.
 
 On the map, scroll to zoom (up to 5×) and drag to move; double-click the map or press "Whole field" to return to the full view. Zoomed in, each unit also shows its commander, morale, ammunition, fatigue and current order.
 

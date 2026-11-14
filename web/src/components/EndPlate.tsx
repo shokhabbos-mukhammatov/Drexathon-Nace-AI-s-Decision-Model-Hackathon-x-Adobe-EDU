@@ -68,6 +68,15 @@ export function EndPlate({ state, post, onClose }: Props) {
           {state.battle} · {state.date}
         </p>
         <h1>The field at nightfall</h1>
+        {state.outcome && <p className="end-outcome">{state.outcome.text}</p>}
+        {state.canFightOn && (
+          <p className="end-fighton">
+            History stops at dusk, but the field is not decided.{' '}
+            <button type="button" className="btn-seal" onClick={() => { void post('continue', {}); onClose(); }}>
+              Fight on until it is decided
+            </button>
+          </p>
+        )}
 
         <nav className="tabs" role="tablist">
           <button type="button" role="tab" aria-selected={tab === 'field'} className={tab === 'field' ? 'is-on' : ''} onClick={() => setTab('field')}>

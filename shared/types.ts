@@ -325,6 +325,12 @@ export interface GameState {
   council?: { votes: CouncilVote[]; result: string };
   report: Report;
   clients: number;
+  /** True once the player chose to fight on past the end of the historical day. */
+  extended?: boolean;
+  /** Set when the battle ends: whether the field was decided, and how. */
+  outcome?: { decided: boolean; winner?: Side | 'none'; text: string };
+  /** At an undecided end: the battle may be fought on past dusk. */
+  canFightOn?: boolean;
 }
 
 export interface TraitEffect {

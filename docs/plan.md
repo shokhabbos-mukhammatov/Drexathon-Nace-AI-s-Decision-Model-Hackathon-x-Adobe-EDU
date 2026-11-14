@@ -2,7 +2,7 @@
 
 Clio is the muse of history. The name was chosen by the user on 2026-11-14.
 
-**Last updated:** 2026-11-14 14:06 PST
+**Last updated:** 2026-11-14 14:03 PST
 **Phase:** working on live services end to end. Remaining: Intern-written report from a full run, Firefly assets, presentation, registration, merge and push.
 **Hard deadline:** submission at 3:00 PM PST today. Build window opens 11:00 AM.
 
@@ -338,6 +338,7 @@ one human take-over, NDI personas with citations.
 - [x] Units drawn as formations of soldiers (one dot is about fifty men): column of fours on the road, four-rank line in position, wavering and routing, losses one man at a time, no enclosing outlines (`web/src/components/TroopCanvas.tsx`)
 - [x] Detailed countryside layer on the map: relief, streams, woods, fields, 22 named farms, minor roads, walls, the town (`web/src/components/Countryside.tsx`). A schematic, not a survey.
 - [x] Ground affects movement (user request): march time per road depends on road or cross-country, the terrain entered, fords and fatigue; a column can end the half hour part-way along the road and is shown there with the reason. The battle now starts at 2:30 PM with 11 turns so the attack still develops before dusk.
+- [x] Fight on past dusk (user request). At 8:00 PM the engine judges whether the field is decided: one side holds every key position, or one side has fewer than one man in four still in the ranks. If not (as in 1863), "Fight on" continues the battle with the same agents until it is decided, both armies stand still for an hour, or about 2:00 AM. The report and council are redone for the new ending. Tested on live Drex: undecided at dusk, fought on, ended at midnight with the field divided.
 - [x] A general held by a player is asked every half hour (user report: holding Lee, only one order came). Lee may keep or change the plan each half hour, and a change goes to Longstreet by courier; any held general orders his own waiting brigades on one sheet. Drex's generals behave as before (autopilot still reproduces all ten documented decisions on the mock decider).
 - [x] Simpler screens (user request: the interface was overloaded when taking actions or reading cards). Order sheet: one question, the choices as plain buttons, a single "likely in 1863" mark, writing your own order folded away. Reserve orders: pre-set to the likeliest choice, one "Send orders". Commander panels: the latest decision in one line. Battle card: one line per brigade. Ledger: three figures, details folded. Explanation card: full odds folded. A banner at the top of the map always says what to do next ("Your order is waiting.", "Press Let history run, or first take command of a general.").
 - [x] Assistant attribution removed from the repository and its history at the user's request (no co-author trailers; agent configuration files kept out of version control).

@@ -45,7 +45,7 @@ function TimelineImpl({ state, onShowCheckpoints }: { state: GameState; onShowCh
         <div className="tl-done" style={{ width: `${(turn / max) * 100}%` }} />
         {ticks.map((i) => (
           <span key={i} className={`tl-tick ${i <= turn ? 'is-past' : ''} ${i === max ? 'is-dusk' : ''}`} style={{ left: `${(i / max) * 100}%` }}>
-            {(i % labelEvery === 0 || i === max) && <em>{i === max ? 'dusk' : clock12(addMinutes(start, i * mpt)).replace(':00', '').replace(' PM', 'p').replace(' AM', 'a')}</em>}
+            {(i % labelEvery === 0 || i === max) && <em>{i === max && !state.extended ? 'dusk' : clock12(addMinutes(start, i * mpt)).replace(':00', '').replace(' PM', 'p').replace(' AM', 'a')}</em>}
           </span>
         ))}
         <motion.span className="tl-now" animate={{ left: `${(turn / max) * 100}%` }} transition={{ type: 'spring', stiffness: 120, damping: 20 }}>

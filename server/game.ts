@@ -18,6 +18,8 @@ import { writeDispatch } from './llm.ts';
 const ROOT = process.cwd();
 const FRONTIER_USD_PER_DECISION = 0.00333; // Nace's published figure for a frontier LLM, per decision
 const FRONTIER_SECONDS_PER_DECISION = 2.0;
+/** How far past the historical day the battle may be fought on: twelve half hours, to about 2 AM. */
+const EXTRA_TURNS = 12;
 
 function mulberry32(seed: number) {
   let a = seed >>> 0;
@@ -75,6 +77,8 @@ export class Game {
   private autoTimer: NodeJS.Timeout | null = null;
   private autoDelay = 2600;
   private seq = 0;
+  /** Half hours in a row with no fighting and no one on the move (fighting on past dusk only). */
+  private quiet = 0;
 
   constructor(private decider: Decider, private onChange: () => void) {
     for (const e of EDGES) {
@@ -93,7 +97,7 @@ export class Game {
     for (const [id, resolve] of this.resolvers) resolve(this.suggestions.get(id) ?? '');
     this.resolvers.clear(); this.suggestions.clear(); this.askLog.clear();
     this.rng = mulberry32(seed);
-    this.latencies = []; this.allDecisions = []; this.running = false; this.seq = 0;
+    this.latencies = []; this.allDecisions = []; this.running = false; this.seq = 0; this.quiet = 0;
     this.control = {};
     for (const n of NODES) this.control[n.id] = INITIAL_CONTROL[n.id] ?? 'empty';
     this.umeta.clear(); this.cmeta.clear();
@@ -172,12 +176,12 @@ export class Game {
   private emit() { this.onChange(); }
   private clockAt(turn: number) {
     const m = BATTLE.startMinutes + turn * BATTLE.turnMinutes;
-    return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+    return `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
   }
   private clockLabel(turn: number) {
     const m = BATTLE.startMinutes + turn * BATTLE.turnMinutes;
-    const h = Math.floor(m / 60); const mm = String(m % 60).padStart(2, '0');
-    return `${h > 12 ? h - 12 : h}:${mm} ${h >= 12 ? 'PM' : 'AM'}`;
+    const h = Math.floor(m / 60) % 24; const mm = String(m % 60).padStart(2, '0');
+    return `${h % 12 === 0 ? 12 : h % 12}:${mm} ${h >= 12 ? 'PM' : 'AM'}`;
   }
   private cmd(id: string) { return this.state.commanders.find((c) => c.id === id)!; }
   private unit(id: string) { return this.state.units.find((u) => u.id === id)!; }
@@ -441,7 +445,13 @@ export class Game {
 
       s.turn = t + 1; s.clock = this.clockAt(s.turn);
       this.refreshObjectives();
-      if (s.turn >= s.maxTurns) { s.phase = 'ended'; s.auto = false; this.endOfDay(); } else s.phase = 'ready';
+      // Past dusk the battle goes on only until it is decided: one side holds every key position,
+      // one side can no longer fight, or both stand still for an hour.
+      const active = NODES.some((n) => this.contested(n.id)) || s.units.some((u) => this.alive(u) && (u.moving || this.umeta.get(u.id)!.destination));
+      this.quiet = active ? 0 : this.quiet + 1;
+      let over = s.turn >= s.maxTurns;
+      if (s.extended && !over && (this.assess().decided || this.quiet >= 2)) over = true;
+      if (over) { s.phase = 'ended'; s.auto = false; this.endOfDay(); } else s.phase = 'ready';
       this.save();
       this.emit();
     } catch (e) {
@@ -1044,8 +1054,54 @@ export class Game {
     }));
   }
 
+  /** Has the field been decided? */
+  private assess(): { decided: boolean; winner?: Side | 'none'; text: string } {
+    const s = this.state;
+    const objectives = s.objectives;
+    const holdsAll = (side: Side) => objectives.length > 0 && objectives.every((o) => o.holder === side);
+    const name = (side: Side) => (side === 'union' ? 'The Union army' : 'The Confederate attack');
+    if (holdsAll('union')) return { decided: true, winner: 'union', text: 'The Union holds every key position. The Confederate attack has failed.' };
+    if (holdsAll('confederate')) return { decided: true, winner: 'confederate', text: 'The Confederates hold every key position. The Union left has been driven from the field.' };
+    for (const side of ['union', 'confederate'] as Side[]) {
+      const all = s.units.filter((u) => u.side === side);
+      const start = all.reduce((a, u) => a + u.strength0, 0);
+      // Brigades resting after a fight still count; only men in flight, or lost, do not.
+      const fit = all.filter((u) => u.strength > 0 && u.status !== 'routed').reduce((a, u) => a + u.strength, 0);
+      if (start > 0 && fit < start * 0.25) {
+        const other: Side = side === 'union' ? 'confederate' : 'union';
+        return { decided: true, winner: other, text: `${name(side)} can no longer fight: fewer than one man in four is still in the ranks.` };
+      }
+    }
+    if (s.extended && this.quiet >= 2) return { decided: true, winner: 'none', text: 'Both armies stand where they are and neither attacks again. The fighting is over; the field is divided.' };
+    return { decided: false, text: 'Neither side has carried the field.' };
+  }
+
   private endOfDay() {
-    this.event('note', `Dusk. The firing dies away. Losses: about ${this.state.casualties.confederate} Confederate, ${this.state.casualties.union} Union.`);
+    const s = this.state;
+    const outcome = this.assess();
+    const cap = BATTLE.maxTurns + EXTRA_TURNS;
+    s.outcome = outcome;
+    s.canFightOn = !outcome.decided && s.maxTurns < cap;
+    const losses = `Losses: about ${s.casualties.confederate} Confederate, ${s.casualties.union} Union.`;
+    if (!s.extended) this.event('note', `Dusk. The firing dies away. ${outcome.text} ${losses}`);
+    else this.event('note', `${this.clockLabel(s.turn)}. ${outcome.decided ? outcome.text : 'Exhaustion ends it before either side breaks. ' + outcome.text} ${losses}`);
+  }
+
+  /** History ends at dusk; if the field is not decided, the player may fight on until it is. */
+  fightOn(): boolean {
+    const s = this.state;
+    if (s.phase !== 'ended' || !s.canFightOn) return false;
+    s.extended = true;
+    s.maxTurns = BATTLE.maxTurns + EXTRA_TURNS;
+    s.phase = 'ready';
+    s.outcome = undefined;
+    s.canFightOn = false;
+    s.council = undefined;
+    s.report = { status: 'idle' };
+    this.quiet = 0;
+    this.event('note', 'History ends at dusk, but the battle is not decided. The fight goes on into the night.');
+    this.emit();
+    return true;
   }
 
   private save() {

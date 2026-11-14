@@ -71,17 +71,20 @@ app.post('/api/council', async (_req, res) => {
 /** Start the after-action report for the battle now in memory, unless it is already written or under way. */
 function startReport() {
   const runId = game.state.runId;
+  const ends = game.state.maxTurns; // a report is for one ending; fighting on starts a new one
   if (game.state.report.status === 'writing' || game.state.report.status === 'done') return;
-  const set = (r: typeof game.state.report) => { if (game.state.runId === runId) { game.state.report = r; broadcast(); } };
+  const set = (r: typeof game.state.report) => { if (game.state.runId === runId && game.state.maxTurns === ends) { game.state.report = r; broadcast(); } };
   void writeReport(runId, game.runLog(), set).catch((e) => set({ status: 'error', note: (e as Error).message }));
 }
 app.post('/api/report', (_req, res) => { startReport(); ok(res); });
+app.post('/api/continue', (_req, res) => ok(res, { ok: game.fightOn() }));
 
 // Intern takes a minute or two, so it is set to work the moment the firing stops, not when the
 // button is pressed; by the time anyone asks for the report it is usually written.
 let reportedRun = '';
 setInterval(() => {
-  if (game.state.phase === 'ended' && reportedRun !== game.state.runId) { reportedRun = game.state.runId; startReport(); }
+  const key = `${game.state.runId}:${game.state.maxTurns}`;
+  if (game.state.phase === 'ended' && reportedRun !== key) { reportedRun = key; startReport(); }
 }, 1500);
 
 // Serve the built frontend when it exists (npm run build), so one process is enough for a demo.
