@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import type { Commander, GameState, Holder, MapNode, Unit } from '../../../shared/types';
 import { MAP_H, MAP_W, byId, clock12, computeSlots, fmtInt } from '../geo';
 import { useImageOk, useStable } from '../useGame';
+import { BattleCard } from './BattleCard';
 import { CourierLayer } from './CourierLayer';
 import { MapBase, pickCorners } from './MapBase';
 import { TroopCanvas } from './TroopCanvas';
@@ -49,14 +50,25 @@ function Flag({ node, holder, historical }: { node: MapNode; holder: Holder; his
   );
 }
 
-function Clash({ node }: { node: MapNode }) {
+function Clash({ node, open, onOpen }: { node: MapNode; open: boolean; onOpen: () => void }) {
   return (
-    <g className="clash" transform={`translate(${node.x} ${node.y})`}>
+    <g
+      className={`clash ${open ? 'is-open' : ''}`}
+      transform={`translate(${node.x} ${node.y})`}
+      role="button"
+      tabIndex={0}
+      aria-label={`See both sides of the fight for ${node.name}`}
+      style={{ cursor: 'pointer' }}
+      onClick={(e) => { e.stopPropagation(); onOpen(); }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); } }}
+    >
+      <title>{`The fight for ${node.name}: see both sides`}</title>
       {[0, 1, 2, 3].map((i) => (
         <circle key={i} className="drift" r={15 + i * 3} cx={(i - 1.5) * 9} cy={-4} fill="#f6f1e4" opacity={0.5} style={{ animationDelay: `${i * 0.7}s` }} />
       ))}
-      <g className="sabres">
-        <circle r={12} fill="#eadbb3" stroke="#9c2f25" strokeWidth={1.3} />
+      <circle r={26} fill="transparent" />
+      <g className="sabres" transform="scale(1.5)">
+        <circle r={12} fill={open ? '#f3e6bd' : '#eadbb3'} stroke="#9c2f25" strokeWidth={open ? 2.2 : 1.3} />
         <path d="M-7 7L6 -7M-6.2 4.2l2.6 2.6" stroke="#2b2118" strokeWidth={1.6} strokeLinecap="round" />
         <path d="M7 7L-6 -7M6.2 4.2l-2.6 2.6" stroke="#2b2118" strokeWidth={1.6} strokeLinecap="round" />
       </g>
@@ -134,6 +146,7 @@ export function MapView({ state }: { state: GameState }) {
   const slots = useMemo(() => computeSlots(units, nodeMap), [units, nodeMap]);
   const [hovered, setHovered] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [battle, setBattle] = useState<string | null>(null);
 
   const contested = useMemo(() => {
     const sides = new Map<string, Set<string>>();
@@ -154,9 +167,10 @@ export function MapView({ state }: { state: GameState }) {
   const shownSlot = shown ? slots.get(shown.id) : undefined;
   const cmdById = useMemo(() => byId(state.commanders ?? []), [state.commanders]);
   const [cx, cy] = corners.cartouche;
+  const battleNode = battle ? nodeMap.get(battle) : undefined;
 
   return (
-    <div className="map-frame" onClick={() => setSelected(null)}>
+    <div className="map-frame" onClick={() => { setSelected(null); setBattle(null); }}>
       <svg className="map-svg map-static" viewBox={`0 0 ${MAP_W} ${MAP_H}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <MapBase nodes={nodes} edges={edges} battle={state.battle ?? ''} date={state.date ?? ''} parchmentOk={parchmentOk} />
       </svg>
@@ -186,12 +200,16 @@ export function MapView({ state }: { state: GameState }) {
 
         {[...contested].map((id) => {
           const n = nodeMap.get(id);
-          return n ? <Clash key={id} node={n} /> : null;
+          return n ? <Clash key={id} node={n} open={battle === id} onOpen={() => setBattle(battle === id ? null : id)} /> : null;
         })}
 
         <CourierLayer couriers={state.couriers ?? []} commanders={state.commanders ?? []} turn={state.turn ?? 0} nodes={nodeMap} edges={edges} />
         <UnitLayer units={units} slots={slots} nodes={nodeMap} edges={edges} selectedId={selected} onHover={setHovered} onSelect={setSelected} />
       </svg>
+
+      <AnimatePresence>
+        {battleNode && contested.has(battleNode.id) && <BattleCard key={'battle-' + battleNode.id} state={state} node={battleNode} onClose={() => setBattle(null)} />}
+      </AnimatePresence>
 
       <AnimatePresence>
         {shown && shownSlot && <UnitCard key={shown.id} unit={shown} commander={cmdById.get(shown.commanderId)} x={shownSlot.x} y={shownSlot.y} />}
