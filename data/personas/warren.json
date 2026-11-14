@@ -1,0 +1,46 @@
+{
+ "commander": "warren",
+ "built_by": "NDI Extract",
+ "built_at": "2026-11-14T19:38:30.265Z",
+ "sources": [
+  "https://archive.org/download/attackdefenseofl00nort/attackdefenseofl00nort.pdf"
+ ],
+ "traits": [
+  {
+   "id": "warren0_0",
+   "label": "Proactive reconnaissance",
+   "text": "He personally rides to the front to assess the tactical situation when he perceives a potential vulnerability in the enemy's position.",
+   "citation": {
+    "doc": "Norton, The Attack and Defense of Little Round Top (1913): Warren to Farley, July 13, 1872",
+    "url": "https://archive.org/download/attackdefenseofl00nort/attackdefenseofl00nort.pdf",
+    "page": "pp. 308-310",
+    "quote": "I continued on till I reached Little Round Top",
+    "status": "found"
+   }
+  },
+  {
+   "id": "warren0_1",
+   "label": "Decisive under pressure",
+   "text": "He immediately requests reinforcements and takes command of available troops to secure the critical position as the enemy attacks.",
+   "citation": {
+    "doc": "Norton, The Attack and Defense of Little Round Top (1913): Warren to Farley, July 13, 1872",
+    "url": "https://archive.org/download/attackdefenseofl00nort/attackdefenseofl00nort.pdf",
+    "page": "pp. 308-310",
+    "quote": "I immediately sent a hastily written dispatch to General Meade to send a division at least to me",
+    "status": "found"
+   }
+  },
+  {
+   "id": "warren0_2",
+   "label": "Assumes responsibility",
+   "text": "He detaches a regiment from another brigade to defend the hill, accepting the personal risk of overriding the immediate chain of command.",
+   "citation": {
+    "doc": "Norton, The Attack and Defense of Little Round Top (1913): Warren to Farley, July 13, 1872",
+    "url": "https://archive.org/download/attackdefenseofl00nort/attackdefenseofl00nort.pdf",
+    "page": "pp. 308-310",
+    "quote": "I took the responsibility to detach Colonel O'Rorke",
+    "status": "found"
+   }
+  }
+ ]
+}

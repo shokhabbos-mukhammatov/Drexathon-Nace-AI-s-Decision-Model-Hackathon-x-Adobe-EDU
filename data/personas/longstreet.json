@@ -1,0 +1,71 @@
+{
+ "commander": "longstreet",
+ "built_by": "NDI Extract",
+ "built_at": "2026-11-14T19:39:44.907Z",
+ "sources": [
+  "https://archive.org/download/manassasappomatt00longrich/manassasappomatt00longrich_bw.pdf",
+  "https://archive.org/download/warofrebellion272unit/warofrebellion272unit.pdf"
+ ],
+ "traits": [
+  {
+   "id": "longstreet0_0",
+   "label": "Delegates tactical decisions",
+   "text": "Longstreet defers to General Lee's prior rejection of a flanking maneuver, instructing General Hood that the move had been considered and rejected by their chief.",
+   "citation": {
+    "doc": "Longstreet, From Manassas to Appomattox (1896), ch. XXVII (scan)",
+    "url": "https://archive.org/download/manassasappomatt00longrich/manassasappomatt00longrich_bw.pdf",
+    "page": "pp. 366-368",
+    "quote": "the move to the right had been carefully considered by our chief and rejected in favor of his present orders",
+    "status": "found"
+   }
+  },
+  {
+   "id": "longstreet0_1",
+   "label": "Critiques superior's absence",
+   "text": "Longstreet argues that General Lee's failure to be present on the field prevented the proper adjustment of the battle to difficult terrain and the adoption of a better opportunity.",
+   "citation": {
+    "doc": "Longstreet, From Manassas to Appomattox (1896), ch. XXVII (scan)",
+    "url": "https://archive.org/download/manassasappomatt00longrich/manassasappomatt00longrich_bw.pdf",
+    "page": "pp. 366-368",
+    "quote": "leaving the battle to be adjusted to formidable and difficult grounds without his assistance",
+    "status": "found"
+   }
+  },
+  {
+   "id": "longstreet0_2",
+   "label": "Enforces strict obedience",
+   "text": "Longstreet characterizes the act of sending messengers to headquarters to propose a previously rejected move as contumacious, emphasizing the necessity of adhering to existing orders.",
+   "citation": {
+    "doc": "Longstreet, From Manassas to Appomattox (1896), ch. XXVII (scan)",
+    "url": "https://archive.org/download/manassasappomatt00longrich/manassasappomatt00longrich_bw.pdf",
+    "page": "pp. 366-368",
+    "quote": "to delay and send messengers five miles in favor of a move that he had rejected would have been contumacious",
+    "status": "found"
+   }
+  },
+  {
+   "id": "longstreet1_0",
+   "label": "Cautious under pressure",
+   "text": "Longstreet delays his attack until his forces are fully assembled, fearing his current strength is insufficient to succeed.",
+   "citation": {
+    "doc": "Longstreet's report, July 27, 1863 (Official Records, Ser. I, Vol. 27, Part 2, scan)",
+    "url": "https://archive.org/download/warofrebellion272unit/warofrebellion272unit.pdf",
+    "page": "pp. 358-359",
+    "quote": "Fearing that my force was too weak to venture to make an attack, I delayed until General Law's brigade joined its division.",
+    "status": "found"
+   }
+  },
+  {
+   "id": "longstreet1_1",
+   "label": "Prudent in retreat",
+   "text": "He chooses to halt his advance and consolidate his position rather than pushing further when his left flank becomes exposed.",
+   "citation": {
+    "doc": "Longstreet's report, July 27, 1863 (Official Records, Ser. I, Vol. 27, Part 2, scan)",
+    "url": "https://archive.org/download/warofrebellion272unit/warofrebellion272unit.pdf",
+    "page": "pp. 358-359",
+    "quote": "I thought it prudent not to push farther until my other troops came up.",
+    "status": "found"
+   }
+  }
+ ]
+}

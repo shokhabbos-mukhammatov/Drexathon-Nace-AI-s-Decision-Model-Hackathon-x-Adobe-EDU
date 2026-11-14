@@ -1,0 +1,46 @@
+{
+ "commander": "sickles",
+ "built_by": "NDI Extract",
+ "built_at": "2026-11-14T19:41:29.753Z",
+ "sources": [
+  "https://archive.org/download/reportofjointcom01unit/reportofjointcom01unit.pdf"
+ ],
+ "traits": [
+  {
+   "id": "sickles0_0",
+   "label": "Acts on own responsibility",
+   "text": "Sickles advances his troops to a forward defensive line without explicit orders, citing the imminent threat of an enemy attack on his left flank.",
+   "citation": {
+    "doc": "Sickles, testimony of February 26, 1864 (Report of the Joint Committee on the Conduct of the War, vol. 1, scan)",
+    "url": "https://archive.org/download/reportofjointcom01unit/reportofjointcom01unit.pdf",
+    "page": "pp. 297-299",
+    "quote": "I took it on my own responsibility",
+    "status": "found"
+   }
+  },
+  {
+   "id": "sickles0_1",
+   "label": "Remonstrates against orders",
+   "text": "Sickles verbally objects to the withdrawal of Buford's cavalry from his left flank, expressing hope that at least a portion of the force would remain.",
+   "citation": {
+    "doc": "Sickles, testimony of February 26, 1864 (Report of the Joint Committee on the Conduct of the War, vol. 1, scan)",
+    "url": "https://archive.org/download/reportofjointcom01unit/reportofjointcom01unit.pdf",
+    "page": "pp. 297-299",
+    "quote": "I remonstrated against that",
+    "status": "found"
+   }
+  },
+  {
+   "id": "sickles0_2",
+   "label": "Confident in holding position",
+   "text": "Sickles assures General Meade of his ability to hold the extended line until reinforcements arrive, despite acknowledging the difficulty of the task.",
+   "citation": {
+    "doc": "Sickles, testimony of February 26, 1864 (Report of the Joint Committee on the Conduct of the War, vol. 1, scan)",
+    "url": "https://archive.org/download/reportofjointcom01unit/reportofjointcom01unit.pdf",
+    "page": "pp. 297-299",
+    "quote": "I assured him of my entire confidence in my ability to hold the position",
+    "status": "found"
+   }
+  }
+ ]
+}

@@ -1,0 +1,21 @@
+{
+ "model": "Qwen/Qwen3.8-27B on DeepInfra, reasoning off",
+ "decisions": 30,
+ "medianMs": 594,
+ "costUsd": 0.0028531500000000005,
+ "drex": {
+  "model": "drex-max-v1.1",
+  "mode": "drex",
+  "medianMs": 355,
+  "costUsd": 0.00040593000000000015
+ },
+ "parsed": 30,
+ "agreement": 0.9666666666666667,
+ "ran_at": "2026-11-14T19:51:20.504Z",
+ "with_reasoning": {
+  "model": "Qwen/Qwen3.8-27B (DeepInfra)",
+  "decisions": 30,
+  "medianMs": 9544,
+  "costUsd": 0.031545975000000004
+ }
+}

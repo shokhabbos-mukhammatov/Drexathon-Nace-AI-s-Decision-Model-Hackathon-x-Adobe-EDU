@@ -129,7 +129,9 @@ export class DrexDecider implements Decider {
       try {
         const res = await fetch(`${BASE}/v1/models`, { headers: { Authorization: `Bearer ${key}` } });
         const body: any = await res.json();
-        const ids: string[] = (body.data ?? body.models ?? body ?? []).map((m: any) => m.id ?? m).filter(Boolean);
+        // The catalog is { models: [{ name, alias_for, ... }] }; retired names are aliases, so skip them.
+        const list: any[] = body.models ?? body.data ?? [];
+        const ids: string[] = list.filter((m) => typeof m === 'string' || !m.alias_for).map((m) => (typeof m === 'string' ? m : m.name ?? m.id)).filter(Boolean);
         model = ids.find((id) => /^drex-max-v/.test(id)) ?? ids.find((id) => id.startsWith('drex-max') && !id.includes('finance')) ?? ids.find((id) => id.startsWith('drex-')) ?? 'drex-latest';
         console.log(`[drex] models: ${ids.join(', ')} -> using ${model}`);
       } catch (e) {

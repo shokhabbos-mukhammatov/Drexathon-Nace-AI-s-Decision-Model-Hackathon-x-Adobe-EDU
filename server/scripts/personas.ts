@@ -14,33 +14,35 @@ if (!KEY) { console.error('NACE_API_KEY is not set (put it in .env).'); process.
 
 interface Source { doc: string; url: string; fileName: string; pages?: { start: number; end: number }; pageLabel?: string }
 
-// Sources verified in docs/research/gettysburg-sources.md. Clean HTML where it exists; the
-// Chamberlain report is the handwritten 1863 scan from the Maine State Archives.
+// Scanned volumes on archive.org, with the page window for July 2 (PDF page indices are the
+// research file's estimates). Several clean-text sites answer NDI's fetcher with 403, and the
+// scans are the real thing anyway.
+const OR1 = 'https://archive.org/download/warofrebellion271unit/warofrebellion271unit.pdf';
+const OR2 = 'https://archive.org/download/warofrebellion272unit/warofrebellion272unit.pdf';
+const JCCW = 'https://archive.org/download/reportofjointcom01unit/reportofjointcom01unit.pdf';
 const SOURCES: Record<string, { who: string; sources: Source[] }> = {
   lee: { who: 'General Robert E. Lee', sources: [
-    { doc: "Lee's report on the Gettysburg campaign, January 1864 (Official Records, Vol. 27, Part 2)", url: 'https://ehistory.osu.edu/books/official-records/044/0318', fileName: 'lee-report-p318.html', pageLabel: 'p. 318' },
-    { doc: "Lee's report on the Gettysburg campaign, January 1864 (Official Records, Vol. 27, Part 2)", url: 'https://ehistory.osu.edu/books/official-records/044/0320', fileName: 'lee-report-p320.html', pageLabel: 'p. 320' },
+    { doc: "Lee's report on the Gettysburg campaign, January 1864 (Official Records, Ser. I, Vol. 27, Part 2, scan)", url: OR2, fileName: 'official-records-27-2.pdf', pages: { start: 324, end: 326 }, pageLabel: 'pp. 318-320' },
   ] },
   longstreet: { who: 'Lieutenant General James Longstreet', sources: [
-    { doc: "Longstreet's report, July 27, 1863 (Official Records, Vol. 27, Part 2)", url: 'https://ehistory.osu.edu/books/official-records/044/0358', fileName: 'longstreet-report-p358.html', pageLabel: 'p. 358' },
-    { doc: 'Longstreet, From Manassas to Appomattox, ch. XXVII', url: 'https://www.battlefields.org/learn/articles/longstreet-gettysburg-second-day', fileName: 'longstreet-memoir-second-day.html' },
+    { doc: 'Longstreet, From Manassas to Appomattox (1896), ch. XXVII (scan)', url: 'https://archive.org/download/manassasappomatt00longrich/manassasappomatt00longrich_bw.pdf', fileName: 'longstreet-manassas-to-appomattox.pdf', pages: { start: 434, end: 436 }, pageLabel: 'pp. 366-368' },
+    { doc: "Longstreet's report, July 27, 1863 (Official Records, Ser. I, Vol. 27, Part 2, scan)", url: OR2, fileName: 'official-records-27-2.pdf', pages: { start: 364, end: 365 }, pageLabel: 'pp. 358-359' },
   ] },
   hood: { who: 'Major General John Bell Hood', sources: [
     { doc: 'Hood to Longstreet, June 28, 1875 (Advance and Retreat)', url: 'https://www.wtj.com/archives/hood/hood03b.htm', fileName: 'hood-letter-1875.htm', pageLabel: 'pp. 55-59' },
   ] },
   meade: { who: 'Major General George G. Meade', sources: [
-    { doc: "Meade's report, October 1, 1863 (Official Records, Vol. 27, Part 1)", url: 'https://ehistory.osu.edu/books/official-records/043/0116', fileName: 'meade-report-p116.html', pageLabel: 'p. 116' },
-    { doc: 'Minutes of council, July 2, 1863 (Official Records, Vol. 27, Part 1)', url: 'https://ehistory.osu.edu/books/official-records/043/0073', fileName: 'council-minutes-p73.html', pageLabel: 'p. 73' },
+    { doc: "Meade's report, October 1, 1863 (Official Records, Ser. I, Vol. 27, Part 1, scan)", url: OR1, fileName: 'official-records-27-1.pdf', pages: { start: 133, end: 135 }, pageLabel: 'pp. 115-117' },
+    { doc: 'Minutes of council, July 2, 1863 (Official Records, Ser. I, Vol. 27, Part 1, scan)', url: OR1, fileName: 'official-records-27-1.pdf', pages: { start: 91, end: 92 }, pageLabel: 'pp. 73-74' },
   ] },
   sickles: { who: 'Major General Daniel E. Sickles', sources: [
-    { doc: 'Sickles, testimony to the Joint Committee on the Conduct of the War, February 26, 1864 (excerpts)', url: 'https://www.hardtackbooks.com/hardtackblog/sicklesgoestowashington', fileName: 'sickles-testimony-excerpts.html' },
+    { doc: 'Sickles, testimony of February 26, 1864 (Report of the Joint Committee on the Conduct of the War, vol. 1, scan)', url: JCCW, fileName: 'joint-committee-vol1.pdf', pages: { start: 377, end: 379 }, pageLabel: 'pp. 297-299' },
   ] },
   warren: { who: 'Brigadier General Gouverneur K. Warren', sources: [
-    { doc: 'Norton, The Attack and Defense of Little Round Top (1913): Warren to Farley, July 13, 1872', url: 'https://archive.org/download/attackdefenseofl00nort/attackdefenseofl00nort.pdf', fileName: 'norton-little-round-top.pdf', pages: { start: 326, end: 328 }, pageLabel: 'pp. 308-310' },
+    { doc: 'Norton, The Attack and Defense of Little Round Top (1913): Warren to Farley, July 13, 1872 (scan)', url: 'https://archive.org/download/attackdefenseofl00nort/attackdefenseofl00nort.pdf', fileName: 'norton-little-round-top.pdf', pages: { start: 326, end: 328 }, pageLabel: 'pp. 308-310' },
   ] },
   chamberlain: { who: 'Colonel Joshua L. Chamberlain', sources: [
-    { doc: "Chamberlain's handwritten report, July 6, 1863 (Maine State Archives)", url: 'https://digitalmaine.com/cgi/viewcontent.cgi?article=1003&context=chamberlain_corr', fileName: 'chamberlain-report-1863.pdf', pages: { start: 4, end: 6 }, pageLabel: 'manuscript pp. 4-6' },
-    { doc: "Chamberlain's report, July 6, 1863 (Official Records, Vol. 27, Part 1)", url: 'https://ehistory.osu.edu/books/official-records/043/0624', fileName: 'chamberlain-report-p624.html', pageLabel: 'p. 624' },
+    { doc: "Chamberlain's report, July 6, 1863 (Official Records, Ser. I, Vol. 27, Part 1, scan)", url: OR1, fileName: 'official-records-27-1.pdf', pages: { start: 643, end: 645 }, pageLabel: 'pp. 623-625' },
   ] },
 };
 
@@ -86,7 +88,7 @@ async function extract(who: string, src: Source) {
   const id = job.job_id ?? job.id;
   const started = Date.now();
   while (!['succeeded', 'failed', 'cancelled'].includes(job.status)) {
-    if (Date.now() - started > 240_000) throw new Error('timed out waiting for the job');
+    if (Date.now() - started > 420_000) throw new Error('timed out waiting for the job');
     await new Promise((r) => setTimeout(r, 3000));
     job = await api('GET', `/v1/documents/jobs/${id}`);
   }

@@ -1,0 +1,46 @@
+{
+ "commander": "hood",
+ "built_by": "NDI Extract",
+ "built_at": "2026-11-14T19:37:46.931Z",
+ "sources": [
+  "https://www.wtj.com/archives/hood/hood03b.htm"
+ ],
+ "traits": [
+  {
+   "id": "hood0_0",
+   "label": "Protests, then obeys",
+   "text": "Hood repeatedly argues against the order to attack up the Emmetsburg road, proposing an alternative flank attack, but ultimately complies with the command after his protests are rejected.",
+   "citation": {
+    "doc": "Hood to Longstreet, June 28, 1875 (Advance and Retreat)",
+    "url": "https://www.wtj.com/archives/hood/hood03b.htm",
+    "page": "pp. 55-59",
+    "quote": "After this urgent protest against entering the battle at Gettysburg, according to instructions—which protest is the first and only one I ever made during my entire military career—I ordered my line to advance and make th",
+    "status": "found"
+   }
+  },
+  {
+   "id": "hood0_1",
+   "label": "Relies on reconnaissance",
+   "text": "Hood uses the reports from his Texas scouts to assess the enemy's position and the tactical difficulties of the ordered attack before making his decision to protest.",
+   "citation": {
+    "doc": "Hood to Longstreet, June 28, 1875 (Advance and Retreat)",
+    "url": "https://www.wtj.com/archives/hood/hood03b.htm",
+    "page": "pp. 55-59",
+    "quote": "I had sent forward some of my picked Texas scouts to ascertain the position of the enemy's extreme left flank.",
+    "status": "found"
+   }
+  },
+  {
+   "id": "hood0_2",
+   "label": "Assesses tactical risk",
+   "text": "Hood evaluates the terrain and enemy fire, concluding that the ordered attack would result in a 'fearful sacrifice' of his troops, which motivates his request to change the plan.",
+   "citation": {
+    "doc": "Hood to Longstreet, June 28, 1875 (Advance and Retreat)",
+    "url": "https://www.wtj.com/archives/hood/hood03b.htm",
+    "page": "pp. 55-59",
+    "quote": "I knew that if the feat was accomplished, it must be at a most fearful sacrifice of as brave and gallant soldiers as ever engaged in battle.",
+    "status": "found"
+   }
+  }
+ ]
+}

@@ -324,7 +324,7 @@ export class Game {
       }
       if (x.checkpoint) this.scoreCheckpoint(x.checkpoint, d, label);
       if (spec.dispatch && !x.unitId) {
-        writeDispatch({ name: spec.agentName, question: x.q.instructions, chosen: label, clock: this.clockLabel(this.state.turn), traits: (spec.traits ?? []).map((t) => t.label) })
+        writeDispatch({ name: spec.agentName, question: x.q.instructions, chosen: `${label} (${a.options.find((o) => o.id === chosen)?.description ?? ''})`, clock: this.clockLabel(this.state.turn), traits: (spec.traits ?? []).map((t) => t.label) })
           .then((line) => { if (line) { d.dispatch = line; this.emit(); } }).catch(() => {});
       }
       out[x.q.id] = chosen;
@@ -559,6 +559,18 @@ export class Game {
       });
     }
     const reserves = this.state.units.filter((u) => u.side === 'union' && u.inReserve && u.id !== 'maine20' && (u.commanderId === 'meade' || t >= 3));
+    const press = (n: string) => {
+      const ours = this.at(n, 'union').reduce((a, u) => a + u.strength, 0);
+      const theirs = this.at(n, 'confederate').reduce((a, u) => a + u.strength, 0);
+      const coming = (this.adj.get(n) ?? []).flatMap((x) => this.at(x, 'confederate')).filter((u) => this.umeta.get(u.id)!.destination === n).reduce((a, u) => a + u.strength, 0);
+      const round = (x: number) => Math.round(x / 100) * 100;
+      if (theirs && ours) return `under attack: our ${round(ours)} men against about ${round(theirs)}`;
+      if (theirs) return `in the enemy's hands, about ${round(theirs)} men`;
+      if (ours && coming) return `held by our ${round(ours)} men, with about ${round(coming)} of the enemy advancing on it`;
+      if (ours) return `held by our ${round(ours)} men, not yet attacked`;
+      return coming ? `unoccupied, with about ${round(coming)} of the enemy advancing on it` : 'unoccupied and quiet';
+    };
+    const reports = RESERVE_TARGETS.map((n) => `${this.nodeName(n)}: ${press(n)}`);
     if (t >= 1) for (const u of reserves) {
       const seed = this.umeta.get(u.id)!.seed; const due = t >= (seed.hintTurn ?? 99);
       const hint = seed.hintTarget ?? 'little_round_top';
@@ -567,8 +579,8 @@ export class Game {
         q: {
           id: `res_${u.id}`, instructions: `Where does General Meade send ${u.name} (${u.strength} men, in reserve at ${this.nodeName(u.nodeId)}) this half hour?`,
           options: [
-            this.opt('stay', 'Kept in reserve', 'Keep it in reserve for now.', due ? 0.6 : 5),
-            ...RESERVE_TARGETS.map((n) => this.opt(n, `To ${this.node(n).short}`, `March it to ${this.nodeName(n)} (${this.holderWord(n)}).`, n === hint ? (due ? 5 : 0.3) : 0.25)),
+            this.opt('stay', 'Kept in reserve', 'No point on the line needs it yet: keep it in hand.', due ? 0.6 : 5),
+            ...RESERVE_TARGETS.map((n) => this.opt(n, `To ${this.node(n).short}`, `March it to ${this.nodeName(n)}, which is ${press(n)}.`, n === hint ? (due ? 5 : 0.3) : 0.25)),
           ],
         },
       });
@@ -576,7 +588,11 @@ export class Game {
     if (!questions.length) return;
     const r = await this.decide({
       agentId: c.id, agentName: c.name, side: c.side, tier: 'army', commanderId: c.id, dispatch: true, traits: c.traits,
-      state: this.agentState(c, { sickles: sm.objective === 'advance_salient' ? 'The III Corps has advanced to the Peach Orchard without orders.' : 'The III Corps is on Cemetery Ridge.' }),
+      state: this.agentState(c, {
+        sickles: sm.objective === 'advance_salient' ? 'The III Corps has advanced to the Peach Orchard without orders.' : 'The III Corps is on Cemetery Ridge.',
+        reports_from_the_left: reports,
+        your_reserve: 'The V Corps and part of the II Corps are in hand to be sent wherever the line is threatened.',
+      }),
       questions,
     });
     if (r.salient) {
@@ -667,44 +683,69 @@ export class Game {
     }));
   }
 
-  /** A commander gives each of his brigades its orders for the half hour. */
+  /**
+   * A commander's orders to his brigades. Only two things are his to judge here: when to commit a
+   * brigade that is still in hand, and whether one that has taken its ground pushes on. A brigade
+   * already marching keeps marching, and one in contact answers for itself (see reactions).
+   */
   private async ordersFor(cmdId: string, t: number) {
     const c = this.cmd(cmdId); const m = this.cmeta.get(cmdId)!;
-    const objective = cmdId === 'lee' ? this.cmeta.get('lee')!.objective : m.objective;
+    const objective = m.objective;
     const mine = this.state.units.filter((u) => u.commanderId === cmdId && this.fighting(u) && u.status !== 'spent' && !u.agentId);
-    if (!mine.length) return;
-    if (c.status !== 'active' || !objective) {
-      // No orders from above: brigades carry on with what they were last told.
-      return;
-    }
+    if (!mine.length || !objective) return;
     const questions: Parameters<Game['decide']>[0]['questions'] = [];
+    const auto: [Unit, string][] = [];
     for (const u of mine) {
       const um = this.umeta.get(u.id)!; const route = um.seed.sectors[objective] ?? [];
-      while (um.route < route.length && u.nodeId === route[um.route] && !this.contested(u.nodeId)) um.route++;
+      if (this.contested(u.nodeId) || um.destination) continue;
+      while (um.route < route.length && u.nodeId === route[um.route]) um.route++;
       const target = route[um.route];
-      const options: QOption[] = []; const due = t >= (um.seed.hintTurn ?? 0);
-      const here = this.nodeName(u.nodeId);
-      if (this.contested(u.nodeId)) {
-        const strong = u.morale > 34;
-        options.push(this.opt('hold', `Hold at ${this.node(u.nodeId).short}`, `Keep fighting for ${here}.`, strong ? 4 : 2));
-        const fb = this.fallbackNode(u);
-        if (fb) options.push(this.opt(`fall_back:${fb}`, `Fall back to ${this.node(fb).short}`, `Break off and fall back to ${this.nodeName(fb)}.`, strong ? 0.4 : 3));
+      if (!target) continue;
+      const fresh = um.route === 0 && um.engagedTurns === 0;
+      const enemyThere = this.at(target, other(u.side)).length > 0;
+      const due = t >= (um.seed.hintTurn ?? 0);
+      // Union brigades taking up an assigned line simply march to it.
+      if (!um.seed.echelon) { auto.push([u, target]); continue; }
+      if (c.status !== 'active') { if (fresh ? this.rightEngaged(um.seed.echelon) : true) auto.push([u, target]); continue; }
+      const here = this.node(u.nodeId).short;
+      if (fresh) {
+        const right = this.state.units.find((x) => this.umeta.get(x.id)!.seed.echelon === um.seed.echelon! - 1);
+        const rm = right ? this.umeta.get(right.id)! : null;
+        const rightState = !right ? 'It is the right-hand brigade and leads the attack.'
+          : rm!.engagedTurns > 0 || right.status === 'engaged' ? `The brigade on its right, ${right.name}, is engaged.`
+          : right.nodeId !== rm!.seed.nodeId ? `The brigade on its right, ${right.name}, has stepped off and is closing with the enemy.`
+          : `The brigade on its right, ${right.name}, has not yet stepped off.`;
+        questions.push({
+          kind: 'order', unitId: u.id, unitName: u.name,
+          q: {
+            id: `ord_${u.id}`,
+            instructions: `The attack is made by brigades in succession from the right, each stepping off once the brigade on its right is engaged. ${u.name} (${u.strength} men, ${fatigueWord(u.fatigue)}) waits at ${this.nodeName(u.nodeId)}, number ${um.seed.echelon} in the order. ${rightState} Does ${c.rank} ${c.name} send it in this half hour?`,
+            options: [
+              this.opt('hold', `Hold ${u.short} back`, 'Its turn has not come: keep it in hand this half hour.', due ? 0.8 : 5),
+              this.opt(`advance:${target}`, `Send ${u.short} in`, `Its turn has come: send it forward now against ${this.nodeName(target)} (${this.holderWord(target)}).`, due ? 5 : 0.4),
+            ],
+          },
+        });
       } else {
-        options.push(this.opt('hold', `Hold at ${this.node(u.nodeId).short}`, `Stay at ${here} this half hour.`, target ? (due ? 0.8 : 5) : 5));
-        if (target) {
-          const enemyThere = this.at(target, other(u.side)).length > 0;
-          options.push(this.opt(`advance:${target}`, `${enemyThere ? 'Attack' : 'March on'} ${this.node(target).short}`,
-            `${enemyThere ? 'Attack the enemy at' : 'Advance to'} ${this.nodeName(target)} (${this.holderWord(target)}).`, due ? 5 : 0.4));
-        }
+        questions.push({
+          kind: 'order', unitId: u.id, unitName: u.name,
+          q: {
+            id: `ord_${u.id}`,
+            instructions: `${u.name} (${u.strength} of ${u.strength0} men, ${moraleWord(u.morale)}, ${ammoWord(u.ammo)}) holds ${this.nodeName(u.nodeId)}. Its next objective is ${this.nodeName(target)} (${this.holderWord(target)}). What does ${c.rank} ${c.name} order?`,
+            options: [
+              this.opt('hold', `Consolidate at ${here}`, `Hold ${this.nodeName(u.nodeId)} and go no farther this half hour.`, u.morale > 50 ? 1.5 : 4),
+              this.opt(`advance:${target}`, `Push on to ${this.node(target).short}`, `Press on at once ${enemyThere ? 'and attack the enemy at' : 'to'} ${this.nodeName(target)}.`, u.morale > 50 ? 4 : 1),
+            ],
+          },
+        });
       }
-      if (options.length < 2) { continue; }
-      const eche = um.seed.echelon && u.side === 'confederate'
-        ? ` It is number ${um.seed.echelon} in the attack, counting from the right; brigades to its right are ${this.rightEngaged(um.seed.echelon) ? 'already engaged' : 'not yet engaged'}.` : '';
-      questions.push({
-        kind: 'order', unitId: u.id, unitName: u.name,
-        q: { id: `ord_${u.id}`, instructions: `What are the orders for ${this.describeUnit(u)} this half hour?${eche}`, options },
-      });
     }
+    const send = (u: Unit, target: string) => {
+      this.umeta.get(u.id)!.destination = target;
+      const attack = this.at(target, other(u.side)).length > 0;
+      u.order = { type: attack ? 'attack' : 'march', target, label: `${attack ? 'Attack' : 'March on'} ${this.node(target).short}` };
+    };
+    for (const [u, target] of auto) send(u, target);
     if (!questions.length) return;
     const r = await this.decide({
       // Brigade orders stay with the decider even when a human holds the commander: the human
@@ -714,15 +755,8 @@ export class Game {
     });
     for (const u of mine) {
       const pick = r[`ord_${u.id}`]; if (!pick) continue;
-      const um = this.umeta.get(u.id)!;
-      if (pick === 'hold') { um.destination = undefined; u.order = { type: 'hold', label: `Hold at ${this.node(u.nodeId).short}` }; }
-      else {
-        const [kind, target] = pick.split(':');
-        um.destination = target;
-        const type: UnitOrder['type'] = kind === 'fall_back' ? 'fall_back' : this.at(target, other(u.side)).length ? 'attack' : 'march';
-        u.order = { type, target, label: `${type === 'fall_back' ? 'Fall back to' : type === 'attack' ? 'Attack' : 'March on'} ${this.node(target).short}` };
-        if (kind === 'fall_back') um.stance = 'fall_back';
-      }
+      if (pick === 'hold') u.order = { type: 'hold', label: `Hold at ${this.node(u.nodeId).short}` };
+      else send(u, pick.split(':')[1]);
     }
   }
   private rightEngaged(echelon: number) {
@@ -771,12 +805,13 @@ export class Game {
         const attacking = defender !== u.side;
         const chamberlain = u.agentId === 'chamberlain';
         const low = u.ammo <= 20; const steady = u.morale > (attacking ? 34 : 40); const fb = this.fallbackNode(u);
+        const refused = um.stance === 'refuse';
         let options: QOption[];
         if (chamberlain) {
           options = [
-            this.opt('stand', 'Holds the line by fire', 'Hold the line and keep up the fire.', low ? 0.7 : 4),
-            this.opt('refuse', 'Bends back the left wing', 'Bend the left wing back at a right angle to face the column working around the flank.', low ? 0.8 : ratio < 0.7 ? 4.5 : 2),
-            this.opt('charge', 'Orders the bayonet', 'Fix bayonets and charge down the slope before the enemy strikes again.', low ? 6 : 0.4),
+            this.opt('stand', 'Holds the line by fire', 'Hold the line and keep up the fire.', u.ammo <= 5 ? 0.3 : low ? 2 : 4),
+            this.opt('refuse', refused ? 'Holds with the left bent back' : 'Bends back the left wing', refused ? 'Stay as formed, the left wing bent back, and try to hold without ammunition.' : 'Bend the left wing back at a right angle to face the column working around the flank.', u.ammo <= 5 ? 0.8 : refused ? 3 : 4.5),
+            this.opt('charge', 'Orders the bayonet', 'Fix bayonets and charge down the slope before the enemy strikes again.', u.ammo <= 5 ? 6 : 0.4),
             this.opt('fall_back', 'Withdraws from the spur', 'Give up the spur and fall back toward the brigade.', low ? 1.2 : 0.2),
           ];
         } else if (attacking) {
@@ -807,9 +842,11 @@ export class Game {
             half_hours_under_fire: um.engagedTurns, odds: ratio >= 1.25 ? 'you outnumber the enemy here' : ratio <= 0.8 ? 'the enemy outnumbers you here' : 'the numbers are about even',
             enemy: foes.map((f) => `${f.name} (about ${Math.round(f.strength / 100) * 100})`), beside_you: friends.filter((f) => f.id !== u.id).map((f) => f.name),
             orders: u.order?.label ?? 'hold',
+            ...(chamberlain && refused ? { your_line: 'The left wing is already bent back at a right angle; the line is stretched to a single rank.' } : {}),
+            ...(u.ammo <= 5 && !attacking ? { crisis: 'The last cartridges are fired. The men are searching the boxes of the fallen. The enemy below is forming to come on again, and you cannot answer his fire.' } : {}),
           },
         };
-        const first = chamberlain && low && !this.cmeta.get('chamberlain')!.flags.scored;
+        const first = chamberlain && u.ammo <= 5 && !this.cmeta.get('chamberlain')!.flags.scored;
         if (first) this.cmeta.get('chamberlain')!.flags.scored = true;
         jobs.push(this.decide({
           agentId: cdr ? cdr.id : u.id, agentName: cdr ? cdr.name : u.leader, side: u.side, tier: 'brigade', commanderId: cdr?.id,
@@ -947,14 +984,15 @@ export class Game {
     return {
       battle: s.battle, date: s.date, mode: s.mode, model: s.model, seed: s.seed, personas: s.personas, ended_at: s.clock,
       objectives: s.objectives, casualties: s.casualties, fidelity: s.fidelity, ledger: s.ledger,
-      commanders: s.commanders.map((c) => ({ name: c.name, role: c.role, side: c.side, status: c.status, played_by: c.controlledBy ? 'a human player' : 'Drex', traits: c.traits.map((t) => ({ label: t.label, text: t.text, source: t.citation ? `${t.citation.doc}${t.citation.page ? ', ' + t.citation.page : ''}` : undefined })) })),
-      units: s.units.map((u) => ({ name: u.name, side: u.side, at: this.nodeName(u.nodeId), strength: u.strength, started_with: u.strength0, status: u.status })),
-      decisions: this.allDecisions.filter((d) => d.tier !== 'brigade' || d.historical).map((d) => ({
+      commanders: s.commanders.map((c) => ({ name: c.name, role: c.role, side: c.side, status: c.status, traits: c.traits.map((t) => t.label) })),
+      hardest_hit_units: [...s.units].filter((u) => u.strength < u.strength0 * 0.75).sort((a, b) => a.strength / a.strength0 - b.strength / b.strength0).slice(0, 8).map((u) => `${u.name} (${u.side}): ${u.strength} of ${u.strength0} left, ${u.status}, at ${this.nodeName(u.nodeId)}`),
+      // Command decisions only: routine brigade orders and reactions would bury them.
+      decisions: this.allDecisions.filter((d) => d.by === 'human' || d.historical || ['objective', 'compliance', 'protest_ruling'].includes(d.kind) || (d.kind === 'reinforcement' && !d.unitId)).map((d) => ({
         time: d.clock, who: d.agentName, question: d.question, chose: d.options.find((o) => o.id === d.chosen)?.label, by: d.by,
         probability: Number((d.options.find((o) => o.id === d.chosen)?.p ?? 0).toFixed(3)),
         historical: d.historical ? d.options.find((o) => o.id === d.historical)?.label : undefined, matches_history: d.matchesHistory, decider_would_have: d.wouldHave,
       })),
-      events: s.events.map((e) => `${e.clock} ${e.text}`),
+      events: s.events.filter((e) => e.kind !== 'clash').map((e) => `${e.clock} ${e.text}`),
     };
   }
 

@@ -1,0 +1,46 @@
+{
+ "commander": "chamberlain",
+ "built_by": "NDI Extract",
+ "built_at": "2026-11-14T19:45:40.016Z",
+ "sources": [
+  "https://archive.org/download/warofrebellion271unit/warofrebellion271unit.pdf"
+ ],
+ "traits": [
+  {
+   "id": "chamberlain0_0",
+   "label": "Decisive under pressure",
+   "text": "Chamberlain orders a bayonet charge up the mountain at night without waiting for ammunition, trusting that the lack of fire would conceal his small force.",
+   "citation": {
+    "doc": "Chamberlain's report, July 6, 1863 (Official Records, Ser. I, Vol. 27, Part 1, scan)",
+    "url": "https://archive.org/download/warofrebellion271unit/warofrebellion271unit.pdf",
+    "page": "pp. 623-625",
+    "quote": "Without waiting to get ammunition, but trusting in part to the very circumstance of not exposing our movement or our small front by firing, and with bayonets fixed",
+    "status": "found"
+   }
+  },
+  {
+   "id": "chamberlain0_1",
+   "label": "Pragmatic resource management",
+   "text": "He places his men in a strong defensive position among the rocks and immediately requests ammunition and support to secure his exposed right flank.",
+   "citation": {
+    "doc": "Chamberlain's report, July 6, 1863 (Official Records, Ser. I, Vol. 27, Part 1, scan)",
+    "url": "https://archive.org/download/warofrebellion271unit/warofrebellion271unit.pdf",
+    "page": "pp. 623-625",
+    "quote": "I placed the men in a strong position among the rocks, and informed Colonel Rice, requesting also ammunition and some support to our right",
+    "status": "found"
+   }
+  },
+  {
+   "id": "chamberlain0_2",
+   "label": "Protective of subordinates",
+   "text": "Chamberlain takes personal responsibility for the safety of his wounded by placing them in local houses and later recommends a commutation of sentence for prisoners who fought well.",
+   "citation": {
+    "doc": "Chamberlain's report, July 6, 1863 (Official Records, Ser. I, Vol. 27, Part 1, scan)",
+    "url": "https://archive.org/download/warofrebellion271unit/warofrebellion271unit.pdf",
+    "page": "pp. 623-625",
+    "quote": "I had taken the responsibility of putting into the houses of citizens in the vicinity of Little Round Top",
+    "status": "found"
+   }
+  }
+ ]
+}

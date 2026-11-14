@@ -7,3 +7,4 @@ data/runs/
 .intern/
 *.log
 .DS_Store
+data/_*

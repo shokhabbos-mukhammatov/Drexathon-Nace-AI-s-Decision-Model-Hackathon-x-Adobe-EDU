@@ -10,7 +10,7 @@ import { spawn } from 'node:child_process';
 import type { Report } from '../shared/types.ts';
 import { chat, deepinfraModel, hasDeepInfra } from './llm.ts';
 
-const TASK = `You are the historian on a staff ride. The file battle-log.json in this folder is the record of a simulated replay of a historical battle in which every commander was an AI agent and a human may have taken over some of them. Read it, then write the after-action report to a new file named after-action.md in this folder.
+const TASK = `You are the historian on a staff ride. The file battle-log.json in this folder is the record of a simulated replay of a historical battle in which every commander was an AI agent and a human may have taken over some of them. Read it once, in full, then write the after-action report to a new file named after-action.md in this folder.
 
 The report is for the people who just played. Use only facts in battle-log.json; do not add history that is not in the file. Markdown, under 450 words, with these sections:
 # After-action report
@@ -31,12 +31,12 @@ function internCommand(): string | null {
   return 'intern';
 }
 
-function runIntern(cwd: string, timeoutMs = 170_000): Promise<{ ok: boolean; note: string }> {
+function runIntern(cwd: string, timeoutMs = 330_000): Promise<{ ok: boolean; note: string }> {
   return new Promise((resolve) => {
     const cmd = internCommand();
     if (!cmd) return resolve({ ok: false, note: 'Intern is not installed' });
     if (!process.env.NACE_API_KEY || !process.env.DEEPINFRA_API_KEY) return resolve({ ok: false, note: 'Intern needs NACE_API_KEY and DEEPINFRA_API_KEY' });
-    const args = ['-p', '--system1', process.env.INTERN_SYSTEM1 || 'drex-latest', '--system2', `deepinfra/${deepinfraModel()}`, '--no-session', '--no-memory', '--max-turns', '14', '--', TASK];
+    const args = ['-p', '--system1', process.env.INTERN_SYSTEM1 || 'drex-latest', '--system2', `deepinfra/${deepinfraModel()}`, '--no-session', '--no-memory', '--max-turns', '8', '--', TASK];
     let out = '';
     const child = spawn(cmd, args, { cwd, env: process.env, shell: false });
     const timer = setTimeout(() => { child.kill('SIGTERM'); resolve({ ok: false, note: 'Intern timed out' }); }, timeoutMs);
@@ -81,7 +81,7 @@ export async function writeReport(runId: string, log: any, set: (r: Report) => v
       const out = await chat([
         { role: 'system', content: 'You are the historian on a staff ride. Write in plain, exact prose. Use only the facts given.' },
         { role: 'user', content: `${TASK.replace(/ to a new file named after-action\.md in this folder/, '').replace(/When the file is written.*$/, 'Reply with the report in Markdown and nothing else.')}\n\nbattle-log.json:\n${JSON.stringify(log).slice(0, 60_000)}` },
-      ], { maxTokens: 1400, temperature: 0.4, timeoutMs: 90_000 });
+      ], { maxTokens: 1600, temperature: 0.4, timeoutMs: 120_000, reasoning: 'none' });
       if (out?.text) {
         fs.writeFileSync(file, out.text);
         return set({ status: 'done', by: 'template', markdown: out.text, note: `Written by ${deepinfraModel()} on DeepInfra (${intern.note})` });
@@ -90,5 +90,5 @@ export async function writeReport(runId: string, log: any, set: (r: Report) => v
   }
   const md = template(log);
   fs.writeFileSync(file, md);
-  set({ status: 'done', by: 'template', markdown: md, note: `Template report (${intern.note}; no DeepInfra key)` });
+  set({ status: 'done', by: 'template', markdown: md, note: `Template report (${intern.note}; ${hasDeepInfra() ? 'the DeepInfra model did not answer in time' : 'no DeepInfra key'})` });
 }

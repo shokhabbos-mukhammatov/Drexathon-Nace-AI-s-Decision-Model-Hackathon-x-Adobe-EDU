@@ -13,5 +13,5 @@ Copy both into the tool's site-packages, for a `uv tool install`:
 %APPDATA%\uv\tools\intern-agent\Lib\site-packages\
 ```
 
-Checked: `intern --help` runs on Windows 10 with the shim. Not checked: a full headless task.
+Checked on Windows 10 with the shim: `intern --help`, and a headless task (`intern -p`) that read a JSON file and wrote a Markdown file, with Drex as System 1 and `Qwen/Qwen3.8-27B` on DeepInfra as System 2.
 Tools that manage process groups may still misbehave; file reads and writes do not use them.

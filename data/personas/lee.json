@@ -1,0 +1,46 @@
+{
+ "commander": "lee",
+ "built_by": "NDI Extract",
+ "built_at": "2026-11-14T19:41:04.403Z",
+ "sources": [
+  "https://archive.org/download/warofrebellion272unit/warofrebellion272unit.pdf"
+ ],
+ "traits": [
+  {
+   "id": "lee0_0",
+   "label": "Cautious about engagement",
+   "text": "He instructed General Ewell to avoid a general engagement until the arrival of other divisions of the army.",
+   "citation": {
+    "doc": "Lee's report on the Gettysburg campaign, January 1864 (Official Records, Ser. I, Vol. 27, Part 2, scan)",
+    "url": "https://archive.org/download/warofrebellion272unit/warofrebellion272unit.pdf",
+    "page": "pp. 318-320",
+    "quote": "avoid a general engagement until the arrival of the other divisions of the army",
+    "status": "found"
+   }
+  },
+  {
+   "id": "lee0_1",
+   "label": "Accepts unavoidable battle",
+   "text": "He concluded that a battle had become in a measure unavoidable because the country was unfavorable for collecting supplies in the presence of the enemy.",
+   "citation": {
+    "doc": "Lee's report on the Gettysburg campaign, January 1864 (Official Records, Ser. I, Vol. 27, Part 2, scan)",
+    "url": "https://archive.org/download/warofrebellion272unit/warofrebellion272unit.pdf",
+    "page": "pp. 318-320",
+    "quote": "A battle had, therefore, become in a measure unavoidable",
+    "status": "found"
+   }
+  },
+  {
+   "id": "lee0_2",
+   "label": "Continues attack after success",
+   "text": "He determined to continue the attack based on the belief that with proper concert of action and increased support, they would ultimately succeed.",
+   "citation": {
+    "doc": "Lee's report on the Gettysburg campaign, January 1864 (Official Records, Ser. I, Vol. 27, Part 2, scan)",
+    "url": "https://archive.org/download/warofrebellion272unit/warofrebellion272unit.pdf",
+    "page": "pp. 318-320",
+    "quote": "it was accordingly determined to continue the attack",
+    "status": "found"
+   }
+  }
+ ]
+}

@@ -2,8 +2,8 @@
 
 Clio is the muse of history. The name was chosen by the user on 2026-11-14.
 
-**Last updated:** 2026-11-14 11:35 PST
-**Phase:** building. The whole app runs end to end on the offline mock decider; nothing has yet been run against live Drex, NDI, DeepInfra or Intern (keys pending).
+**Last updated:** 2026-11-14 11:53 PST
+**Phase:** working on live services end to end. Remaining: Intern-written report from a full run, Firefly assets, presentation, registration, merge and push.
 **Hard deadline:** submission at 3:00 PM PST today. Build window opens 11:00 AM.
 
 This file is the single source of truth for what we are building and where we are.
@@ -108,14 +108,13 @@ Settled 2026-11-14 about 11:15:
 | Q30 | Intern | Used inside the product (user: "let's try to use intern and DeepInfra in the system"). Intern is the open-source harness at github.com/nace-ai/intern: System 1 is Drex, System 2 is a DeepInfra model. Clio runs it headless to write the after-action report from the run's decision log (`server/report.ts`). |
 | Q31 | DeepInfra | Yes. A DeepInfra-hosted model (default `Qwen/Qwen3.8-27B`) writes the one-line dispatches and is Intern's System 2. Anthropic is not used. |
 
-Known problem: **Intern does not start on Windows** (it imports the Unix-only `fcntl` module, and uses process groups and SIGHUP). This laptop has no WSL distribution and no Docker. Until it can run somewhere (WSL, a Mac, a Linux box or a Codespace), the report falls back to the same DeepInfra model called directly, and the report card says so. `INTERN_CMD` in `.env` overrides the command if a working install appears.
+Resolved: **Intern did not start on Windows** (it imports the Unix-only `fcntl` module, and uses process groups and SIGHUP). This laptop has no WSL distribution and no Docker. A two-file shim in `tools/intern-windows-shim/` fixes it, and a headless Intern task now completes here. If Intern fails at report time, the same DeepInfra model writes the report directly and the report card says so.
 
 Still open:
 
 | # | Open question | State |
 |---|---|---|
 | Q32 | Presentation | Required by rule 4. Proposed: a five-slide deck the user builds in Adobe Express from the outline in `docs/pitch.md`. Not yet confirmed. |
-| Q33 | Where Intern runs | Needs a Unix environment. Options: ask the organizers, borrow a Mac, or run the repo in a GitHub Codespace. Awaiting the user. |
 
 Submission (from the organizers): register the team at nace.ai/drexathon/submit with code `Drexathon2026` (team name, member names, contact email), keep the private team link, then add title, explanation, track, presentation, GitHub repo link and an optional demo URL, push all code and click **Finalize**. Only finalized entries are judged.
 
@@ -323,11 +322,20 @@ one human take-over, NDI personas with citations.
 - [x] Map UI (`web/`): title screen, SVG campaign map, marching units, couriers, commander panels, order sheet, telegraph, ledger, timeline, explain card, end plate. Checked in the browser on the mock decider: it loads, a full battle animates, no console errors. Not yet checked: the whole layout at 1920x1080 on a projector, and the order sheet, explain card and end plate by hand.
 - [x] Server flows checked through the API on the mock decider: take-over, typed order ("Hold Cemetery Ridge as ordered" mapped to obey), council of war, template after-action report
 - [x] README, LICENSE, pitch outline (`docs/pitch.md`), dev launch config
-- [ ] Nace key ($35 promo code `DREXATHON`) and DeepInfra key in `.env`
-- [ ] First live Drex run; tune question wording against the checkpoints
-- [ ] NDI personas built and cached in `data/personas/`
-- [ ] Fidelity and measured-comparison numbers recorded
-- [ ] Intern running: a Windows shim (`tools/intern-windows-shim/`) now lets `intern --help` start on this laptop; a full headless report run is untested until the keys exist (Q33)
+- [x] Keys in `.env` (git-ignored, never printed); `DECIDER=drex`
+- [x] Live Drex verified: `drex-max-v1.1`, one battle is about 170 decisions in about 18 seconds for about $0.0019
+- [x] Questions reworked after the first live run (it kept brigades and reserves waiting because the state hid facts a commander would know): echelon timing is put as a judgement with the right-hand brigade's status, Meade gets a report on each threatened point, Chamberlain is told his crisis
+- [x] Live autopilot result (seed 1863, authored personas): 9 of 10 documented decisions match and all 5 key positions end as in 1863. The miss: Longstreet delays before obeying (his own report says "I delayed")
+- [x] DeepInfra verified (`Qwen/Qwen3.8-27B`)
+- [x] Intern verified on Windows with the shim: a headless task read a file and wrote a file, Drex as System 1
+- [x] NDI personas built for 6 of 7 commanders from scanned volumes on archive.org, each trait with a verbatim quote and page (Lee, Longstreet, Hood, Sickles, Warren, Chamberlain). Meade's main report timed out on the 105 MB volume and he keeps the authored persona unless the council-minutes job lands. The clean-text sites and the handwritten Chamberlain scan answer NDI's fetcher with 403.
+- [x] Fidelity on live Drex (`data/fidelity.json`, seed 1863): **8 of 9** documented decisions reproduced with the NDI personas, **6 of 8** without. Without his persona Hood simply obeys, so the protest and Longstreet's ruling never happen. Caveat for the pitch: Drex clearly knows these commanders by name (Sickles advances even with no persona), so the persona is not the only source of the behaviour.
+- [x] Measured comparison (`data/measured.json`), the same 30 decisions: Drex `drex-max-v1.1` median 355 ms, $0.00041 total. `Qwen/Qwen3.8-27B` on DeepInfra with reasoning off: 594 ms, $0.0029, agreeing with Drex on 29 of 30. With reasoning on (the model's default): 9,544 ms, $0.0315. So about 7 times cheaper than the same-size LLM at its fastest, 77 times cheaper and 27 times faster than it thinking.
+- [x] In the browser on live Drex: took Sickles (Drex gave 97% that he advances), typed "Hold Cemetery Ridge as ordered", Drex read it as "obeys" at 97%, history diverged. Explain card data verified through the API (removing Lee's "has declined the flank march" moves his choice by 6 points).
+- [x] Dispatch lines from DeepInfra, with `reasoning_effort: none` (about 1 s each)
+- [x] Council of war on live Drex: 6 of 9 to stay in one run (history was unanimous)
+- [ ] After-action report through Intern from a full run (first attempt timed out on an oversized log; log slimmed, limit raised, rerunning)
+- [ ] By-hand look at the whole layout at 1920x1080, the explain card and the end plate
 - [ ] Firefly assets generated by the user (prompts in section 7) and placed in `web/public/`
 - [ ] Team registered; presentation; README; push; Finalize
 - [ ] Multiplayer tab recording (the server already supports a second tab claiming a commander)

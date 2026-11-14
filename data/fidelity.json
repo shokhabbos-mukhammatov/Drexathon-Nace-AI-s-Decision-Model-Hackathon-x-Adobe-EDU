@@ -1,0 +1,131 @@
+{
+ "ran_at": "2026-11-14T19:49:50.139Z",
+ "decider": "drex",
+ "model": "drex-max-v1.1",
+ "withPersona": {
+  "matched": 8,
+  "total": 9
+ },
+ "withoutPersona": {
+  "matched": 6,
+  "total": 8
+ },
+ "detail": {
+  "withPersona": {
+   "matched": 8,
+   "total": 9,
+   "objectives": [
+    {
+     "nodeId": "peach_orchard",
+     "name": "The Peach Orchard",
+     "historical": "confederate",
+     "holder": "confederate"
+    },
+    {
+     "nodeId": "wheatfield",
+     "name": "The Wheatfield",
+     "historical": "contested",
+     "holder": "union"
+    },
+    {
+     "nodeId": "devils_den",
+     "name": "Devil's Den",
+     "historical": "confederate",
+     "holder": "confederate"
+    },
+    {
+     "nodeId": "little_round_top",
+     "name": "Little Round Top",
+     "historical": "union",
+     "holder": "union"
+    },
+    {
+     "nodeId": "cemetery_ridge_s",
+     "name": "Cemetery Ridge, the left",
+     "historical": "union",
+     "holder": "union"
+    }
+   ],
+   "ledger": {
+    "decisions": 162,
+    "medianMs": 269,
+    "inputTokens": 62875,
+    "costUsd": 0.00188625,
+    "frontierCostUsd": 0.53946,
+    "frontierSeconds": 324,
+    "measured": {
+     "model": "Qwen/Qwen3.8-27B (DeepInfra)",
+     "decisions": 30,
+     "medianMs": 9544,
+     "costUsd": 0.031545975000000004,
+     "drex": {
+      "model": "drex-max-v1.1",
+      "mode": "drex",
+      "medianMs": 315,
+      "costUsd": 0.00040791000000000004
+     },
+     "agreement": 0.23333333333333334,
+     "ran_at": "2026-11-14T19:45:38.201Z"
+    }
+   }
+  },
+  "withoutPersona": {
+   "matched": 6,
+   "total": 8,
+   "objectives": [
+    {
+     "nodeId": "peach_orchard",
+     "name": "The Peach Orchard",
+     "historical": "confederate",
+     "holder": "confederate"
+    },
+    {
+     "nodeId": "wheatfield",
+     "name": "The Wheatfield",
+     "historical": "contested",
+     "holder": "union"
+    },
+    {
+     "nodeId": "devils_den",
+     "name": "Devil's Den",
+     "historical": "confederate",
+     "holder": "confederate"
+    },
+    {
+     "nodeId": "little_round_top",
+     "name": "Little Round Top",
+     "historical": "union",
+     "holder": "union"
+    },
+    {
+     "nodeId": "cemetery_ridge_s",
+     "name": "Cemetery Ridge, the left",
+     "historical": "union",
+     "holder": "union"
+    }
+   ],
+   "ledger": {
+    "decisions": 170,
+    "medianMs": 267,
+    "inputTokens": 61962,
+    "costUsd": 0.0018588599999999997,
+    "frontierCostUsd": 0.5661,
+    "frontierSeconds": 340,
+    "measured": {
+     "model": "Qwen/Qwen3.8-27B (DeepInfra)",
+     "decisions": 30,
+     "medianMs": 9544,
+     "costUsd": 0.031545975000000004,
+     "drex": {
+      "model": "drex-max-v1.1",
+      "mode": "drex",
+      "medianMs": 315,
+      "costUsd": 0.00040791000000000004
+     },
+     "agreement": 0.23333333333333334,
+     "ran_at": "2026-11-14T19:45:38.201Z"
+    }
+   }
+  }
+ }
+}

@@ -23,11 +23,13 @@ Build the deck in Adobe Express; use the Firefly title art and portraits. One id
 5. Dusk: council of war, ground held against 1863, the after-action report written by Intern.
 
 ## 4. Why it needs Nace
-**Title:** Two hundred decisions a battle, in milliseconds, for a fraction of a cent.
-- Fill in from the ledger: decisions, median time, total cost, and the measured cost of the same decisions on a general LLM.
-- Drex can only answer with a legal move, with a probability on each: no parsing, no invented orders, and the "pull of history" is visible.
-- NDI means a teaching tool that cannot make up its sources.
-- Fill in: history fidelity with personas versus without.
+**Title:** About 170 decisions a battle, in a third of a second each, for a fifth of a cent.
+- Measured on this build: one full battle is about 170 Drex decisions, about 18 seconds of wall time, $0.0019.
+- The same 30 decisions on a general 27B model on DeepInfra: 7 times the cost at its fastest (reasoning off, and it agreed with Drex on 29 of 30), 77 times the cost and 27 times slower when it thinks first.
+- Drex can only answer with a legal move, with a probability on each: nothing to parse, no invented orders, and the pull of history is visible on screen.
+- NDI read 1860s scans from archive.org and returned each trait with the sentence and page it came from. A teaching tool cannot make up its sources.
+- History fidelity on autopilot: 8 of 9 documented decisions with the NDI personas, 6 of 8 without. Without his persona, Hood just obeys.
+- Be ready for: "does Drex just know Gettysburg?" Partly, yes: Sickles advances even with no persona. The personas add the Hood and Longstreet exchange, and the player's own decisions are where it leaves the record.
 
 ## 5. What is next
 **Title:** Any battle. Any decision worth rehearsing.

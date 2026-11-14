@@ -16,7 +16,7 @@ export interface ChatUsage { ms: number; inputTokens: number; outputTokens: numb
 
 export async function chat(
   messages: { role: 'system' | 'user'; content: string }[],
-  opts: { maxTokens?: number; temperature?: number; timeoutMs?: number } = {},
+  opts: { maxTokens?: number; temperature?: number; timeoutMs?: number; reasoning?: 'none' } = {},
 ): Promise<{ text: string; usage: ChatUsage } | null> {
   const key = process.env.DEEPINFRA_API_KEY;
   if (!key) return null;
@@ -25,7 +25,8 @@ export async function chat(
     const res = await fetch(`${BASE}/chat/completions`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: deepinfraModel(), messages, max_tokens: opts.maxTokens ?? 400, temperature: opts.temperature ?? 0.7 }),
+      // reasoning_effort 'none' turns off the model's thinking pass: about 1 s a reply against about 10 s.
+      body: JSON.stringify({ model: deepinfraModel(), messages, max_tokens: opts.maxTokens ?? 400, temperature: opts.temperature ?? 0.7, ...(opts.reasoning ? { reasoning_effort: opts.reasoning } : {}) }),
       signal: AbortSignal.timeout(opts.timeoutMs ?? 20_000),
     });
     const json: any = await res.json().catch(() => ({}));
@@ -50,9 +51,10 @@ export async function writeDispatch(d: { name: string; question: string; chosen:
     const out = await chat([
       { role: 'system', content: 'You write one-line field dispatches for an 1863 battle simulation. Reply with the dispatch only: one sentence, at most 22 words, first person, plain period English, no quotation marks, no preamble. Do not invent facts beyond the decision given.' },
       { role: 'user', content: `Commander: ${d.name}. Time: ${d.clock}. Character: ${d.traits.join('; ') || 'not given'}.\nThe matter before him: ${d.question}\nHe has decided: ${d.chosen}.\nWrite his dispatch.` },
-    ], { maxTokens: 300, temperature: 0.8, timeoutMs: 15_000 });
+    ], { maxTokens: 160, temperature: 0.8, timeoutMs: 20_000, reasoning: 'none' });
+    if (!out?.text) console.warn(`[dispatch] empty reply for ${d.name}`);
     const line = out?.text.split('\n').map((s) => s.trim()).filter(Boolean).pop()?.replace(/^["'“]|["'”]$/g, '');
-    return line && line.length < 220 ? line : null;
+    return line && line.length < 260 ? line : null;
   } catch (e) {
     console.warn('[dispatch]', (e as Error).message);
     return null;
