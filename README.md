@@ -63,7 +63,7 @@ can be tried anywhere.
 ## Playing it
 
 - A banner at the top of the map always says what to do next.
-- **Let history run** plays the afternoon; **Take command** on any general's panel puts you in his place. When it is your turn an order sheet opens: pick one of the choices (the one marked "likely in 1863" is what Drex expects the real general to do), or write the order in your own words.
+- **Let history run** plays the afternoon; **Take command** on any general's panel puts you in his place. A general you hold is asked every half hour (Lee, for instance, may keep or change the plan of attack, and orders his own brigades). When it is your turn an order sheet opens: pick one of the choices (the one marked "likely in 1863" is what Drex expects the real general to do), or write the order in your own words.
 - Tap the crossed sabres on a fight to see both sides; tap "why?" on a decision to see which traits moved it.
 - At dusk, **The field at nightfall** shows the ground against 1863, the council of war and Intern's after-action report.
 

@@ -453,24 +453,41 @@ export class Game {
 
   private async leePhase(t: number) {
     const lee = this.cmd('lee'); const m = this.cmeta.get('lee')!;
-    if (m.objective) return;
-    const q: Question = {
-      id: 'objective',
-      instructions: "What does General Lee order the First Corps to do against the Union left this afternoon?",
-      options: [
-        this.opt('emmitsburg_road', OBJECTIVES.emmitsburg_road.label, OBJECTIVES.emmitsburg_road.text, 6),
-        this.opt('flank_round_tops', OBJECTIVES.flank_round_tops.label, OBJECTIVES.flank_round_tops.text + ' General Longstreet has urged this.', 1.4),
-        this.opt('await', OBJECTIVES.await.label, OBJECTIVES.await.text, 0.5),
-      ],
-    };
+    // Drex's Lee sets the plan once, as Lee did. A player holding Lee may review it every half hour.
+    if (m.objective && (!lee.controlledBy || lee.status !== 'active')) return;
+    const first = !m.objective;
+    const current = m.objective as keyof typeof OBJECTIVES | undefined;
+    const q: Question = first
+      ? {
+          id: 'objective',
+          instructions: 'What does General Lee order the First Corps to do against the Union left this afternoon?',
+          options: [
+            this.opt('emmitsburg_road', OBJECTIVES.emmitsburg_road.label, OBJECTIVES.emmitsburg_road.text, 6),
+            this.opt('flank_round_tops', OBJECTIVES.flank_round_tops.label, OBJECTIVES.flank_round_tops.text + ' General Longstreet has urged this.', 1.4),
+            this.opt('await', OBJECTIVES.await.label, OBJECTIVES.await.text, 0.5),
+          ],
+        }
+      : {
+          id: 'objective',
+          instructions: `It is ${this.clockLabel(t)}. The First Corps is under orders to ${OBJECTIVES[current!].label.toLowerCase()}. Does General Lee keep the plan or change it?`,
+          options: [
+            this.opt(current!, `Keep the plan: ${OBJECTIVES[current!].label.toLowerCase()}`, `Let the attack go on as ordered: ${OBJECTIVES[current!].text}`, 6),
+            ...(['emmitsburg_road', 'flank_round_tops'] as const).filter((k) => k !== current).map((k) => this.opt(k, `Change to: ${OBJECTIVES[k].label.toLowerCase()}`, OBJECTIVES[k].text, 0.6)),
+            ...(current !== 'await' ? [this.opt('await', 'Halt the attack', 'Stop the First Corps where it stands and await developments.', 0.4)] : []),
+          ],
+        };
     const r = await this.decide({
       agentId: 'lee', agentName: lee.name, side: lee.side, tier: 'army', commanderId: 'lee', dispatch: true, traits: lee.traits,
-      state: this.agentState(lee, { note: "Longstreet's two divisions are coming into position on the right, opposite the enemy's left." }),
-      questions: [{ q, kind: 'objective', historical: 'emmitsburg_road', checkpoint: 'lee_objective' }],
+      state: this.agentState(lee, { note: first ? "Longstreet's two divisions are coming into position on the right, opposite the enemy's left." : 'Reports from the right are coming in.' }),
+      questions: [{ q, kind: 'objective', historical: first ? 'emmitsburg_road' : undefined, checkpoint: first ? 'lee_objective' : undefined }],
     });
-    m.objective = r.objective; lee.intent = OBJECTIVES[r.objective as keyof typeof OBJECTIVES].label;
-    if (r.objective !== 'await') this.giveOrder('lee', 'longstreet', r.objective as keyof typeof OBJECTIVES);
-    else m.objective = undefined; // he will be asked again next half hour
+    const pick = r.objective as keyof typeof OBJECTIVES;
+    lee.intent = OBJECTIVES[pick].label;
+    if (first && pick === 'await') { m.objective = undefined; return; } // he will be asked again next half hour
+    if (pick === current) return;
+    m.objective = pick;
+    this.giveOrder('lee', 'longstreet', pick);
+    if (!first) this.event('note', `Lee changes the plan: ${OBJECTIVES[pick].label.toLowerCase()}. A courier rides to Longstreet.`, lee.nodeId, 'confederate');
   }
 
   private async longstreetPhase(t: number) {
@@ -740,8 +757,23 @@ export class Game {
       const fresh = um.route === 0 && um.engagedTurns === 0;
       const enemyThere = this.at(target, other(u.side)).length > 0;
       const due = t >= (um.seed.hintTurn ?? 0);
-      // Union brigades taking up an assigned line simply march to it.
-      if (!um.seed.echelon) { auto.push([u, target]); continue; }
+      const human = !!c.controlledBy && c.status === 'active';
+      // Union brigades taking up an assigned line simply march to it, unless a player holds the commander.
+      if (!um.seed.echelon && !human) { auto.push([u, target]); continue; }
+      if (!um.seed.echelon) {
+        questions.push({
+          kind: 'order', unitId: u.id, unitName: u.name,
+          q: {
+            id: `ord_${u.id}`,
+            instructions: `${u.name} (${u.strength} men) is at ${this.nodeName(u.nodeId)}. Its place in the line is ${this.nodeName(target)} (${this.holderWord(target)}). What are its orders this half hour?`,
+            options: [
+              this.opt(`advance:${target}`, `${u.short} to ${this.node(target).short}`, `March it to ${this.nodeName(target)}.`, 5),
+              this.opt('hold', `${u.short} holds`, `Keep it at ${this.nodeName(u.nodeId)}.`, 1),
+            ],
+          },
+        });
+        continue;
+      }
       if (c.status !== 'active') { if (fresh ? this.rightEngaged(um.seed.echelon) : true) auto.push([u, target]); continue; }
       const here = this.node(u.nodeId).short;
       if (fresh) {
@@ -784,9 +816,9 @@ export class Game {
     for (const [u, target] of auto) send(u, target);
     if (!questions.length) return;
     const r = await this.decide({
-      // Brigade orders stay with the decider even when a human holds the commander: the human
-      // makes the command decisions, the staff turns them into marching orders.
+      // A player holding the commander gives these orders himself, on one sheet each half hour.
       agentId: c.id, agentName: c.name, side: c.side, tier: c.tier, traits: c.traits,
+      commanderId: c.controlledBy ? c.id : undefined,
       state: this.agentState(c, { your_intention: OBJECTIVES[objective as keyof typeof OBJECTIVES].text }), questions,
     });
     for (const u of mine) {

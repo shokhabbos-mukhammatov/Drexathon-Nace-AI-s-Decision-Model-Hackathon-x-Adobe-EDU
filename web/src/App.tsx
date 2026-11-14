@@ -98,7 +98,7 @@ export default function App() {
   const headCommander = head ? commanders.find((c) => c.id === head.commanderId) : undefined;
   // Like orders for one commander's separate units (Meade's reserves) are answered together on one sheet.
   const batch = useMemo(
-    () => (head && head.kind === 'reinforcement' && head.unitId ? myPending.filter((p) => p.commanderId === head.commanderId && p.kind === 'reinforcement' && !!p.unitId) : []),
+    () => (head && (head.kind === 'reinforcement' || head.kind === 'order') && head.unitId ? myPending.filter((p) => p.commanderId === head.commanderId && p.kind === head.kind && !!p.unitId) : []),
     [head, myPending],
   );
 

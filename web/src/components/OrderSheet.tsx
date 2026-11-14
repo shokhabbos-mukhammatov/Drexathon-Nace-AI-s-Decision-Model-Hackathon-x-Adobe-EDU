@@ -145,9 +145,9 @@ export function OrderSheet({ pending, reading, onReading, more, batch, commander
   if (group) {
     return (
       <div className="sheet-wrap">
-        <motion.section key={groupKey} className={`sheet sheet-batch side-${commander?.side ?? 'union'}`} initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 240, damping: 24 }} aria-label="Orders for the reserves">
+        <motion.section key={groupKey} className={`sheet sheet-batch side-${commander?.side ?? 'union'}`} initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 240, damping: 24 }} aria-label="Orders for your units">
           {head}
-          <p className="sheet-question">Where should each of your reserves go?</p>
+          <p className="sheet-question">{group[0].kind === 'order' ? 'Orders for your brigades this half hour.' : 'Where should each of your reserves go?'}</p>
           <p className="sheet-hint">Each is set to what the real {surname(commander)} would likely do. Change any, then send.</p>
           <div className="batch">
             {group.map((g) => {
