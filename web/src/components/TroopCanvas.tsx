@@ -2,10 +2,16 @@ import { memo, useEffect, useRef } from 'react';
 import type { MapEdge, MapNode, Side, Unit } from '../../../shared/types';
 import { DOT_GAP, MAP_H, MAP_W, RANKS, type Pt, type Slot, dotCount, edgePoints, findEdge, pointAt, polyLength } from '../geo';
 
-// The troops themselves. Each dot is about fifty men. A brigade marches in column along the
-// road, forms line facing the enemy, fires by files, and loses dots where it loses men. Every
-// formation is enclosed in an outline so it reads as one body. Drawn on a canvas because there
-// are hundreds of dots in motion; the labels and hit areas stay in the SVG layer above.
+// The troops themselves. Each dot is about fifty men.
+//
+// Men move at a marching pace to an exact place in a formation; nothing eases or drifts.
+//  - On the road a brigade is a column of fours that follows the bends of the road, each rank
+//    stepping off in turn and filing into line as it arrives.
+//  - In position it is a line of battle four ranks deep, facing the enemy.
+//  - Under fire the line holds only as well as its morale: a shaken line wavers and sheds men to
+//    the rear, a routed one dissolves and every man runs for himself.
+//  - Losses are paid out one man at a time across the half hour, so you see each one fall.
+// Nothing encloses a formation: it is free to break. Hovering or selecting a unit rings it.
 
 interface Props {
   units: Unit[];
@@ -18,47 +24,35 @@ interface Props {
 }
 
 interface Dot { x: number; y: number; k: number }
+interface March { pts: Pt[]; len: number; t0: number; dur: number; flee: boolean }
 interface Sim {
   dots: Dot[];
   nodeId: string;
   side: Side;
-  march?: { pts: Pt[]; len: number; t0: number; dur: number };
+  march?: March;
+  /** Men still to fall from the last report of losses, and the clock that spaces them out. */
+  owed: number;
+  every: number;
+  since: number;
 }
-interface Fallen { x: number; y: number; side: Side; t: number }
+interface Fallen { x: number; y: number; side: Side; t: number; a: number }
 interface Puff { x: number; y: number; vx: number; vy: number; t: number; life: number }
 interface Flash { x: number; y: number; t: number }
 
-export const MARCH_MS = 1900;
+const PACE = 62; // map units a second on the road
+const COL_GAP = 4.7; // spacing in column, along and across
+const ABREAST = 4;
+const LOSS_WINDOW = 3.2; // seconds over which a half hour's losses fall
+
+/** How long a column of this many men takes to file down a road of this length and form up. */
+export function marchSeconds(len: number, men: number): number {
+  const tail = Math.floor((dotCount(men) - 1) / ABREAST) * COL_GAP;
+  return Math.max(1.6, Math.min(4.6, (len + tail) / PACE));
+}
 
 const DOT = { union: '#24427a', confederate: '#5b5650' } as const;
-const RING = { union: '#16263f', confederate: '#7d2f27' } as const;
-const TINT = { union: 'rgba(47, 75, 124, 0.16)', confederate: 'rgba(125, 47, 39, 0.13)' } as const;
+const EDGE = { union: '#101d33', confederate: '#2c2622' } as const;
 const FLAG = { union: '#1f3a6b', confederate: '#a23a2e' } as const;
-
-const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
-
-function hull(points: Pt[]): Pt[] {
-  if (points.length < 3) return points.slice();
-  const p = points.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-  const cross = (o: Pt, a: Pt, b: Pt) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
-  const lower: Pt[] = [];
-  for (const q of p) { while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], q) <= 0) lower.pop(); lower.push(q); }
-  const upper: Pt[] = [];
-  for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], q) <= 0) upper.pop(); upper.push(q); }
-  lower.pop(); upper.pop();
-  return lower.concat(upper);
-}
-
-const RING_PTS: Pt[] = Array.from({ length: 10 }, (_, i) => [Math.cos((i / 10) * Math.PI * 2), Math.sin((i / 10) * Math.PI * 2)] as Pt);
-
-/** The outline of a body of dots: their hull, pushed out by `pad` with rounded corners. */
-function enclosure(dots: Dot[], pad: number): Pt[] {
-  if (!dots.length) return [];
-  const core = hull(dots.map((d) => [d.x, d.y] as Pt));
-  const grown: Pt[] = [];
-  for (const [x, y] of core) for (const [cx, cy] of RING_PTS) grown.push([x + cx * pad, y + cy * pad]);
-  return hull(grown);
-}
 
 function TroopCanvasImpl(props: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -91,12 +85,18 @@ function TroopCanvasImpl(props: Props) {
     const ro = new ResizeObserver(fit);
     ro.observe(canvas);
 
-    /** Where dot i of n stands when the body is formed in line at its slot. */
+    const toward = (side: Side) => (side === 'confederate' ? 1 : -1); // toward the enemy across the place
+
+    /** Place of man i of n in line of battle at the slot. */
     const lineSpot = (slot: Slot, i: number, n: number): Pt => {
       const files = Math.ceil(n / RANKS);
       const file = Math.floor(i / RANKS); const rank = i % RANKS;
-      const toward = slot.side === 'confederate' ? 1 : -1; // toward the enemy across the place
-      return [slot.x + toward * ((RANKS - 1) / 2 - rank) * DOT_GAP, slot.y + (file - (files - 1) / 2) * DOT_GAP];
+      return [slot.x + toward(slot.side) * ((RANKS - 1) / 2 - rank) * DOT_GAP, slot.y + (file - (files - 1) / 2) * DOT_GAP];
+    };
+
+    const fall = (sim: Sim, i: number, now: number) => {
+      const [d] = sim.dots.splice(i, 1);
+      if (d) fallen.push({ x: d.x, y: d.y, side: sim.side, t: now, a: d.k * Math.PI });
     };
 
     const frame = (now: number) => {
@@ -106,20 +106,26 @@ function TroopCanvasImpl(props: Props) {
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
       ctx.clearRect(0, 0, MAP_W, MAP_H);
 
-      // The fallen stay where they fell and fade over a minute.
-      fallen = fallen.filter((f) => now - f.t < 60_000);
-      if (fallen.length > 900) fallen.splice(0, fallen.length - 900);
+      // The fallen lie where they fell.
+      fallen = fallen.filter((f) => now - f.t < 90_000);
+      if (fallen.length > 700) fallen.splice(0, fallen.length - 700);
       for (const f of fallen) {
-        const age = (now - f.t) / 60_000;
-        ctx.globalAlpha = 0.55 * (1 - age);
-        ctx.fillStyle = f.side === 'union' ? '#1b2c4a' : '#4a2a22';
-        ctx.fillRect(f.x - 2.1, f.y - 0.8, 4.2, 1.6);
-        if (now - f.t < 500) { ctx.globalAlpha = 0.8 * (1 - (now - f.t) / 500); ctx.fillStyle = '#b3261e'; ctx.beginPath(); ctx.arc(f.x, f.y, 3.4, 0, 7); ctx.fill(); }
+        const age = now - f.t;
+        ctx.globalAlpha = 0.62 * (1 - age / 90_000);
+        ctx.strokeStyle = f.side === 'union' ? '#1b2c4a' : '#43302a';
+        ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(f.x - Math.cos(f.a) * 2, f.y - Math.sin(f.a) * 2); ctx.lineTo(f.x + Math.cos(f.a) * 2, f.y + Math.sin(f.a) * 2); ctx.stroke();
+        if (age < 650) {
+          // the moment he is hit
+          const p = age / 650;
+          ctx.globalAlpha = 0.9 * (1 - p);
+          ctx.fillStyle = '#b3261e'; ctx.beginPath(); ctx.arc(f.x, f.y, 2.2 + p * 3.2, 0, 7); ctx.fill();
+        }
       }
       ctx.globalAlpha = 1;
 
       const seen = new Set<string>();
-      const bodies: { u: Unit; sim: Sim; reserve: boolean; broken: boolean; engaged: boolean }[] = [];
+      const bodies: { u: Unit; sim: Sim; slot: Slot; reserve: boolean; broken: boolean }[] = [];
 
       for (const u of units) {
         const slot = slots.get(u.id);
@@ -128,117 +134,132 @@ function TroopCanvasImpl(props: Props) {
         const want = dotCount(u.strength);
         let sim = sims.get(u.id);
         if (!sim) {
-          sim = { dots: [], nodeId: u.nodeId, side: u.side };
+          sim = { dots: [], nodeId: u.nodeId, side: u.side, owed: 0, every: 0, since: 0 };
           for (let i = 0; i < want; i++) { const [x, y] = lineSpot(slot, i, want); sim.dots.push({ x, y, k: Math.random() }); }
           sims.set(u.id, sim);
         }
         const reserve = !!u.inReserve || u.status === 'reserve';
         const broken = u.status === 'routed';
-        const engaged = !reserve && !broken && (u.status === 'engaged' || contested.has(u.nodeId));
+        const inFight = !reserve && !broken && (u.status === 'engaged' || contested.has(u.nodeId));
+        const shaken = !broken && (u.status === 'shaken' || u.status === 'spent' || u.morale < 40);
 
-        // A move to another place: fall into column and take the road.
+        // Ordered to another place: take the road. A routed unit does not march, it runs.
         if (sim.nodeId !== u.nodeId) {
           const e = findEdge(edges, sim.nodeId, u.nodeId);
-          const from: Pt = sim.dots.length ? [sim.dots.reduce((a, d) => a + d.x, 0) / sim.dots.length, sim.dots.reduce((a, d) => a + d.y, 0) / sim.dots.length] : [slot.x, slot.y];
+          const n0 = sim.dots.length || 1;
+          const from: Pt = [sim.dots.reduce((a, d) => a + d.x, 0) / n0, sim.dots.reduce((a, d) => a + d.y, 0) / n0];
           const road = e ? edgePoints(e, nodes, sim.nodeId) : [];
           const pts: Pt[] = [from, ...road.slice(1, -1), [slot.x, slot.y]];
-          sim.march = reduce ? undefined : { pts, len: Math.max(1, polyLength(pts)), t0: now, dur: MARCH_MS };
+          const len = Math.max(1, polyLength(pts));
+          sim.march = reduce ? undefined : { pts, len, t0: now, dur: marchSeconds(len, u.strength) * 1000, flee: broken };
           sim.nodeId = u.nodeId;
         }
 
-        // Losses: men fall out of the front ranks and stay on the ground.
-        while (sim.dots.length > want) {
-          const files = Math.ceil(sim.dots.length / RANKS);
-          const i = Math.min(sim.dots.length - 1, Math.floor(Math.random() * files) * RANKS + (Math.random() < 0.3 ? 1 : 0));
-          const [d] = sim.dots.splice(i, 1);
-          fallen.push({ x: d.x + (Math.random() - 0.5) * 2, y: d.y + (Math.random() - 0.5) * 2, side: u.side, t: now });
+        // Losses reported for the half hour are paid out a man at a time.
+        const excess = sim.dots.length - want;
+        if (excess > sim.owed) { sim.owed = excess; sim.every = LOSS_WINDOW / excess; }
+        if (excess <= 0) sim.owed = 0;
+        if (sim.owed > 0) {
+          sim.since += dt;
+          while (sim.owed > 0 && (reduce || sim.since >= sim.every) && sim.dots.length > want) {
+            sim.since -= sim.every;
+            const n = sim.dots.length; const files = Math.ceil(n / RANKS);
+            // the front rank takes most of it
+            const i = sim.march ? Math.floor(Math.random() * n) : Math.min(n - 1, Math.floor(Math.random() * files) * RANKS + (Math.random() < 0.3 ? 1 : 0));
+            fall(sim, i, now); sim.owed--;
+          }
         }
         while (sim.dots.length < want) { const [x, y] = lineSpot(slot, sim.dots.length, want); sim.dots.push({ x, y, k: Math.random() }); }
 
-        // Where each man is trying to be.
         const n = sim.dots.length;
         const m = sim.march;
-        const f = m ? Math.min(1, (now - m.t0) / m.dur) : 1;
-        if (m && f >= 1) sim.march = undefined;
-        const pull = 1 - Math.exp(-dt * (m ? 9 : 5));
+        const elapsed = m ? (now - m.t0) / 1000 : 0;
+        if (m && now - m.t0 > m.dur + 900) sim.march = undefined;
+        const ranksInColumn = Math.ceil(n / ABREAST);
+        const head = m ? ((now - m.t0) / m.dur) * (m.len + (ranksInColumn - 1) * COL_GAP) : 0;
+        const step = (reduce ? 1e6 : m?.flee ? PACE * 1.9 : PACE * 1.7) * dt;
+
         for (let i = 0; i < n; i++) {
           const d = sim.dots[i];
-          let tx: number; let ty: number;
-          if (m && f < 1) {
-            // Column of threes strung back along the road behind the head of the column.
-            const along = ease(f) * (m.len + Math.floor((n - 1) / 3) * 5.2) - Math.floor(i / 3) * 5.2;
-            const g = Math.max(0, Math.min(1, along / m.len));
-            const [px, py] = pointAt(m.pts, g);
-            const [qx, qy] = pointAt(m.pts, Math.min(1, g + 0.02));
-            const len = Math.hypot(qx - px, qy - py) || 1;
-            const off = ((i % 3) - 1) * 4.3;
-            tx = px + (-(qy - py) / len) * off; ty = py + ((qx - px) / len) * off;
+          let tx = d.x; let ty = d.y;
+          if (m && m.flee) {
+            // Every man for himself, at his own speed, strung out along the road and off it.
+            const s = Math.min(m.len, elapsed * PACE * (1.1 + d.k * 0.9));
+            const [px, py] = pointAt(m.pts, s / m.len);
+            const a = d.k * 61; const r = 4 + ((d.k * 13.7) % 1) * (s >= m.len ? 26 : 12);
+            tx = px + Math.cos(a) * r; ty = py + Math.sin(a) * r;
+          } else if (m) {
+            const along = head - Math.floor(i / ABREAST) * COL_GAP;
+            if (along >= m.len) [tx, ty] = lineSpot(slot, i, n); // arrived: file into line
+            else if (along > 0) {
+              const g = along / m.len;
+              const [px, py] = pointAt(m.pts, g);
+              const [qx, qy] = pointAt(m.pts, Math.min(1, g + 0.015));
+              const [bx, by] = pointAt(m.pts, Math.max(0, g - 0.015));
+              const hx = qx - bx; const hy = qy - by; const hl = Math.hypot(hx, hy) || 1;
+              const off = ((i % ABREAST) - (ABREAST - 1) / 2) * COL_GAP;
+              tx = px + (-hy / hl) * off; ty = py + (hx / hl) * off;
+            } // else: not yet his rank's turn to step off; he stands where he is
           } else if (broken) {
-            const a = d.k * 50; const r = (9 + Math.sqrt(n) * 4.2) * Math.sqrt((d.k * 7.13) % 1);
+            const a = d.k * 61; const r = 4 + ((d.k * 13.7) % 1) * 26;
             tx = slot.x + Math.cos(a) * r; ty = slot.y + Math.sin(a) * r;
           } else {
             [tx, ty] = lineSpot(slot, i, n);
-            if (u.status === 'spent' || u.status === 'shaken') { tx += Math.sin(d.k * 40) * 1.7; ty += Math.cos(d.k * 31) * 1.7; }
+            if (shaken) {
+              // The line wavers, and some men hang back from it.
+              const back = -toward(u.side);
+              const file = Math.floor(i / RANKS);
+              tx += Math.sin(now / 900 + file * 0.9) * 1.6 + (d.k > 0.82 ? back * (5 + d.k * 9) : 0);
+              ty += Math.cos(d.k * 31) * 1.4;
+            }
           }
-          if (reduce) { d.x = tx; d.y = ty; }
-          else {
-            d.x += (tx - d.x) * pull; d.y += (ty - d.y) * pull;
-            if (engaged) { d.x += (Math.random() - 0.5) * 0.55; d.y += (Math.random() - 0.5) * 0.55; }
-          }
+          const dx = tx - d.x; const dy = ty - d.y; const dist = Math.hypot(dx, dy);
+          if (dist <= step) { d.x = tx; d.y = ty; }
+          else { d.x += (dx / dist) * step; d.y += (dy / dist) * step; }
         }
 
         // Fire by files from the front rank.
-        if (engaged && !reduce && !sim.march && u.ammo > 0 && n > 0) {
+        if (inFight && !reduce && !sim.march && u.ammo > 0 && n > 0) {
           const files = Math.ceil(n / RANKS);
-          const rate = files * 0.55 * (u.ammo > 15 ? 1 : 0.35);
+          const rate = files * 0.5 * (u.ammo > 15 ? 1 : 0.35);
           let shots = Math.random() < rate * dt ? 1 : 0;
           if (rate * dt > 0.5 && Math.random() < 0.5) shots++;
-          const toward = u.side === 'confederate' ? 1 : -1;
+          const t = toward(u.side);
           while (shots-- > 0) {
             const d = sim.dots[Math.min(n - 1, Math.floor(Math.random() * files) * RANKS)];
-            flashes.push({ x: d.x + toward * 4, y: d.y, t: now });
-            puffs.push({ x: d.x + toward * 5.5, y: d.y, vx: toward * (5 + Math.random() * 9), vy: -3 - Math.random() * 7, t: now, life: 1300 + Math.random() * 1100 });
+            flashes.push({ x: d.x + t * 4, y: d.y, t: now });
+            puffs.push({ x: d.x + t * 5.5, y: d.y, vx: t * (5 + Math.random() * 9), vy: -3 - Math.random() * 7, t: now, life: 1300 + Math.random() * 1100 });
           }
         }
-        bodies.push({ u, sim, reserve, broken, engaged });
+        bodies.push({ u, sim, slot, reserve, broken });
       }
       for (const id of sims.keys()) if (!seen.has(id)) sims.delete(id);
 
-      // Enclosures first, then the men on top.
-      ctx.lineJoin = 'round';
-      for (const { u, sim, reserve, broken, engaged } of bodies) {
-        const shape = enclosure(sim.dots, 7);
-        if (shape.length < 3) continue;
-        ctx.beginPath();
-        shape.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-        ctx.closePath();
-        ctx.fillStyle = reserve ? 'rgba(233, 219, 178, 0.55)' : TINT[u.side];
-        ctx.globalAlpha = broken ? 0.5 : 1;
-        ctx.fill();
-        const picked = u.id === selectedId || u.id === hoveredId;
-        ctx.setLineDash(reserve ? [4, 3] : broken ? [1.5, 3] : []);
-        ctx.strokeStyle = picked ? '#a8843a' : RING[u.side];
-        ctx.lineWidth = picked ? 2.6 : engaged ? 2 : 1.4;
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.globalAlpha = 1;
-      }
       for (const { u, sim, reserve, broken } of bodies) {
-        ctx.globalAlpha = broken ? 0.6 : u.status === 'spent' ? 0.75 : 1;
-        if (reserve) {
-          ctx.strokeStyle = DOT[u.side]; ctx.lineWidth = 0.9;
-          ctx.beginPath();
-          for (const d of sim.dots) { ctx.moveTo(d.x + 1.8, d.y); ctx.arc(d.x, d.y, 1.8, 0, 7); }
-          ctx.stroke();
-        } else {
-          ctx.fillStyle = DOT[u.side];
-          ctx.beginPath();
-          for (const d of sim.dots) { ctx.moveTo(d.x + 2.1, d.y); ctx.arc(d.x, d.y, 2.1, 0, 7); }
-          ctx.fill();
+        const n = sim.dots.length;
+        if (!n) continue;
+        // A ring only for the unit under the pointer or selected.
+        if (u.id === selectedId || u.id === hoveredId) {
+          let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+          for (const d of sim.dots) { x0 = Math.min(x0, d.x); x1 = Math.max(x1, d.x); y0 = Math.min(y0, d.y); y1 = Math.max(y1, d.y); }
+          ctx.strokeStyle = '#a8843a'; ctx.lineWidth = 1.6; ctx.setLineDash([5, 4]);
+          ctx.beginPath(); ctx.ellipse((x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0) / 2 + 12, (y1 - y0) / 2 + 12, 0, 0, 7); ctx.stroke();
+          ctx.setLineDash([]);
         }
-        // The colours, carried in the centre of the line.
-        if (!broken && sim.dots.length > 3) {
-          const c = sim.dots[Math.floor(sim.dots.length / 2)];
+        ctx.globalAlpha = broken ? 0.7 : u.status === 'spent' ? 0.8 : 1;
+        // marching cadence: alternate ranks rock a little as they step
+        const stepping = !!sim.march && !sim.march.flee && !reduce;
+        ctx.beginPath();
+        for (let i = 0; i < n; i++) {
+          const d = sim.dots[i];
+          const bob = stepping ? Math.sin(now / 95 + Math.floor(i / ABREAST) * Math.PI) * 0.45 : 0;
+          ctx.moveTo(d.x + 2.1, d.y + bob); ctx.arc(d.x, d.y + bob, reserve ? 1.8 : 2.1, 0, 7);
+        }
+        if (reserve) { ctx.strokeStyle = DOT[u.side]; ctx.lineWidth = 0.9; ctx.stroke(); }
+        else { ctx.fillStyle = DOT[u.side]; ctx.fill(); ctx.strokeStyle = EDGE[u.side]; ctx.lineWidth = 0.45; ctx.stroke(); }
+        // The colours: at the head of a column, in the centre of a line. A routed unit has lost them.
+        if (!broken && n > 3) {
+          const c = sim.dots[sim.march ? 0 : Math.floor(n / 2)];
           const wave = reduce ? 0 : Math.sin(now / 260 + c.k * 9) * 0.8;
           ctx.strokeStyle = '#2b2118'; ctx.lineWidth = 1;
           ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.lineTo(c.x, c.y - 13); ctx.stroke();

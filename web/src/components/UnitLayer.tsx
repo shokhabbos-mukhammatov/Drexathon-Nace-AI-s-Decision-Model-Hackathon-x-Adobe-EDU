@@ -1,8 +1,8 @@
 import { memo, useEffect, useMemo, useRef } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import type { MapEdge, MapNode, Unit } from '../../../shared/types';
-import { type Slot, edgePoints, findEdge, fmtInt } from '../geo';
-import { MARCH_MS } from './TroopCanvas';
+import { type Pt, type Slot, edgePoints, findEdge, fmtInt, polyLength } from '../geo';
+import { marchSeconds } from './TroopCanvas';
 
 // The soldiers themselves are drawn by TroopCanvas. This layer carries what belongs to each
 // formation as a whole: its name and strength, and the area that answers to the pointer.
@@ -29,7 +29,7 @@ interface TagProps {
 
 function UnitTagImpl({ unit, slot, nodes, edges, selected, onHover, onSelect }: TagProps) {
   const reduce = useReducedMotion();
-  const last = useRef<{ nodeId: string } | null>(null);
+  const last = useRef<{ nodeId: string; x: number; y: number } | null>(null);
   const first = last.current === null;
 
   // Follow the column along the road to the new place in line.
@@ -38,27 +38,29 @@ function UnitTagImpl({ unit, slot, nodes, edges, selected, onHover, onSelect }: 
     if (prev && prev.nodeId !== unit.nodeId && !reduce) {
       const e = findEdge(edges, prev.nodeId, unit.nodeId);
       const mid = e ? edgePoints(e, nodes, prev.nodeId).slice(1, -1) : [];
-      return { x: [null, ...mid.map((p) => p[0]), slot.x] as (number | null)[], y: [null, ...mid.map((p) => p[1]), slot.y] as (number | null)[], marching: true };
+      const len = polyLength([[prev.x, prev.y] as Pt, ...mid, [slot.x, slot.y] as Pt]);
+      // The name travels with the middle of the column, so it takes as long as the column does.
+      return { x: [null, ...mid.map((p) => p[0]), slot.x] as (number | null)[], y: [null, ...mid.map((p) => p[1]), slot.y] as (number | null)[], seconds: marchSeconds(len, unit.strength) };
     }
-    return { x: slot.x as number | (number | null)[], y: slot.y as number | (number | null)[], marching: false };
+    return { x: slot.x as number | (number | null)[], y: slot.y as number | (number | null)[], seconds: 0 };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unit.nodeId, slot.x, slot.y, reduce]);
 
   useEffect(() => {
-    last.current = { nodeId: unit.nodeId };
-  }, [unit.nodeId]);
+    last.current = { nodeId: unit.nodeId, x: slot.x, y: slot.y };
+  }, [unit.nodeId, slot.x, slot.y]);
 
   const reserve = !!unit.inReserve || unit.status === 'reserve';
   const routed = unit.status === 'routed' || unit.status === 'spent';
   const frac = Math.max(0, Math.min(1, unit.strength0 > 0 ? unit.strength / unit.strength0 : 0));
   const half = slot.front / 2;
-  const dur = anim.marching ? MARCH_MS / 1000 : 0.7;
+  const dur = anim.seconds || 0.7;
 
   return (
     <motion.g
       initial={first ? { x: slot.x, y: slot.y, opacity: 0 } : false}
       animate={{ x: anim.x, y: anim.y, opacity: 1 }}
-      transition={reduce ? { duration: 0 } : { x: { duration: dur, ease: 'easeInOut' }, y: { duration: dur, ease: 'easeInOut' }, opacity: { duration: 0.6 } }}
+      transition={reduce ? { duration: 0 } : { x: { duration: dur, ease: 'linear' }, y: { duration: dur, ease: 'linear' }, opacity: { duration: 0.6 } }}
       style={{ cursor: 'pointer' }}
       onMouseEnter={() => onHover(unit.id)}
       onMouseLeave={() => onHover(null)}
