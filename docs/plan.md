@@ -1,0 +1,333 @@
+# Clio: project plan
+
+Clio is the muse of history. The name was chosen by the user on 2026-11-14.
+
+**Last updated:** 2026-11-14 11:35 PST
+**Phase:** building. The whole app runs end to end on the offline mock decider; nothing has yet been run against live Drex, NDI, DeepInfra or Intern (keys pending).
+**Hard deadline:** submission at 3:00 PM PST today. Build window opens 11:00 AM.
+
+This file is the single source of truth for what we are building and where we are.
+Read it before starting any work, and update the **Status** section after every finished step.
+
+---
+
+## 1. The pitch
+
+Stage a real historical battle as a living map. Every commander is an AI agent whose
+personality is extracted from that commander's own documents, and every decision each
+agent makes is made by Drex in milliseconds, with a visible probability for each option.
+Left alone, the agents replay history. A person can step into any commander's boots, give
+a different order, and watch history bend.
+
+Pitched as "any battle"; demoed on one: **Gettysburg, Day 2 (July 2, 1863, about 4 PM to dusk)**,
+southern end of the field.
+
+## 2. Hackathon constraints
+
+| Item | Value |
+|---|---|
+| Event | Drexathon (Nace AI x Adobe EDU), San Francisco, 2026-11-14 |
+| Team | Solo |
+| Track | Swarm Intelligence: multiple agents coordinate, compete or negotiate, Drex makes every agent's calls |
+| Bonus | NDI used to bring real documents into the build |
+| Extra prize | Best Use of Adobe (Firefly, Express, Photoshop) |
+| Schedule | 11:00 build begins, 3:00 PM hard submission deadline, 3:15 finalist demos, 5-minute limit |
+| Judging | Live on the main stage. At kickoff the judges said they want to see a **real use case solved with Nace** (reported by the user, 2026-11-14). |
+
+### Official rules (from nace.ai/drexathon, read 2026-11-14 11:00)
+
+1. Build with Intern, the Nace harness.
+2. Extra credit for partner tools: Adobe, DeepInfra.
+3. Finalize before the countdown reaches zero (about 3:00 PM). No edits after the deadline.
+4. Every team: a presentation plus code in the open-source library at nace.ai/drexathon.
+5. Pick one of the use-case tracks.
+6. **Finalists are picked by usage of Drex, Intern, NDI, and partner tools.**
+
+What this means for us:
+
+- **Intern** is Nace's AI agent that lives in Slack (@Intern), with its own computer, browser and
+  email; early access, reached by "DM @Intern in Slack" from nace.ai/intern. No public developer
+  API was found. We currently have no role for it; see Q30.
+- **DeepInfra** is a partner tool, so the dispatch-writing LLM runs there, not on Anthropic (settled, Q31).
+- **Usage counts.** The swarm (about 28 Drex calls per turn, plus explainability re-asks and
+  fidelity runs) and the NDI persona pipeline should all run on the user's own key so the usage is attributed.
+- **Credits:** sign in to console.nace.ai with Google or GitHub, open Billing, redeem promo code
+  `DREXATHON` for $35.
+- **Submission:** nace.ai/drexathon/submit. Register a team with the event code from an organizer
+  to get a private access key, save the project there, and finalize before the timer ends. The
+  code must be open source, so secrets stay in a git-ignored `.env`.
+
+## 3. Settled decisions
+
+| # | Decision | Answer |
+|---|---|---|
+| Q1 | Track | Swarm Intelligence |
+| Q2 | Scope | Pitched as any battle; one well-documented US battle is built |
+| Q8 | Battle | Gettysburg, Day 2 only, about 4 PM to dusk |
+| Q4/Q9 | Simulation shape | A map with units moving, limited freedom. Units directly under a commander take orders; units not directly controlled follow their own unit behaviour. Turns are 20 to 30 minutes of battle time. Code lists every legal order (hold, march to X, attack X, fall back, reinforce Y) and Drex picks one. Extra features wanted here to make it strong for judges (see section 4). |
+| Q10 | Coordination | Two tiers at minimum: Lee and Meade set objectives; Longstreet, Hood, Sickles, Warren and Chamberlain receive the order in their `state` and Drex decides whether they obey, drag their feet or deviate, based on persona. Extra features wanted here too (see section 4). |
+| Q11 | Combat resolution | Code, with a fixed seed. Drex decides; arithmetic stays in code so a run is repeatable and a changed outcome traces to a changed decision. |
+| Q3/Q12 | Runtime LLM | Drex makes every decision. The user may type an order in plain English and Drex maps it to a legal move. A DeepInfra-hosted model writes a one-line in-character dispatch after Drex has decided (changed from a small LLM by Q31); templates are the fallback. |
+| Q5/Q13 | Players | One user on one laptop can take over any commander at any decision point. Multiplayer: the server holds the game state so a second browser tab can claim another commander. No accounts, no lobby. Built last, cut first, shown only as a recording. |
+| Q6 | NDI | Real primary sources (reports, letters, memoir excerpts) go through NDI Extract to build each commander's persona profile; every trait cites a page. |
+| Q7 | Stack | TypeScript end to end: Node server, React, animated SVG map. |
+| Q7/Q14 | Visual bar | Incredibly beautiful and detailed, smooth animation, live action, nothing generic. Period campaign map, engraved type, blue and gray unit blocks marching along roads, dispatches as telegram cards, Drex probabilities as ink bars. The map is based on documented maps of the period, with our own finish. |
+| Q14 | Adobe | The user generates commander portraits and a parchment map texture in Firefly during the build. |
+| Q15 | Keys | Nace key and credits come later via the event QR code; DeepInfra key set up by the user (Q31). Keys go in `.env`, never in chat or git. |
+
+Round 3, confirmed 2026-11-14 about 10:40:
+
+| # | Decision | Answer |
+|---|---|---|
+| Q16 | Agent tiers | Three tiers, all decided by Drex, about 28 agents per turn: army (Lee, Meade) set objectives; corps and division commanders decide whether to comply and what to order; about 20 brigade agents each decide stand, fall back, rout or countercharge. Chamberlain's bayonet charge should emerge from this, not be scripted. |
+| Q17 | Map and unit extras | Terrain per location (high ground, woods, rocks, open field), ammunition and fatigue per unit, and couriers: orders ride along the roads as animated riders and arrive late. No full fog of war. |
+| Q18 | Coordination extras | Protest and appeal up the chain, where the superior decides (Hood to Longstreet to Lee). Reinforcement requests between peers, where each peer decides whether to release troops (Warren's call at Little Round Top). A council of war at dusk where Meade's generals vote. No trust scores. |
+| Q19 | Explainability | Click any decision to see which persona traits moved it: re-ask Drex with each trait removed and show the probability shift. Each trait links to its NDI page citation. |
+| Q20 | Measured result | A history fidelity score: on autopilot, how many of about 8 documented decisions the agents reproduce, with the NDI personas and without them. Plus an end-state comparison with history on the key ground. |
+| Q21 | Demo script | As in section 8. |
+| Q22 | Map source | The map is drawn as SVG with positions taken from a public-domain period survey, over the Firefly parchment texture. No raw scan as background. |
+| Q23 | Decision ledger | Always visible in a corner: decisions made, median latency, total cost, and what the same run would cost on a frontier LLM. |
+| Q24 | Name | Clio, the muse of history. The name should evoke history and stepping into the event; "Turning Point", "Countermand" and "Firsthand" were rejected. |
+| Q25 | Start time | Coding starts at 11:00 AM. Until then, brainstorming and planning only. |
+
+Confirmed 2026-11-14 about 11:20:
+
+| # | Decision | Answer |
+|---|---|---|
+| Q31 | Dispatch-writing LLM | DeepInfra (partner tool), not Anthropic. Key in `DEEPINFRA_API_KEY`, model in `DEEPINFRA_MODEL` (default `Qwen/Qwen3.8-27B`, confirmed in DeepInfra's model list; $0.15 in, $1.875 out per 1M tokens). Its thinking mode is on by default, so turn it off per request for one-line dispatches. Whether the Q29 comparison also runs on DeepInfra is decided with Q29. |
+
+## 4. Settled after the official rules, and still open
+
+Settled 2026-11-14 about 11:15:
+
+| # | Decision | Answer |
+|---|---|---|
+| Q27 | Real-use-case framing | Lead with the staff ride: military schools and leadership courses walk Gettysburg to study how commanders decided under pressure; it takes a trip, a historian and a day. Clio gives any classroom or training course that exercise, grounded in the commanders' own documents. |
+| Q28 | After-action report | Yes: at dusk, a debrief of where the player departed from the historical commander and what followed, built from the decision log. |
+| Q29 | Measured comparison | Yes: the same decisions put to Drex and to a general LLM, measured, shown in the ledger (`server/scripts/measure.ts`). In the cut list just above multiplayer. |
+| Q30 | Intern | Used inside the product (user: "let's try to use intern and DeepInfra in the system"). Intern is the open-source harness at github.com/nace-ai/intern: System 1 is Drex, System 2 is a DeepInfra model. Clio runs it headless to write the after-action report from the run's decision log (`server/report.ts`). |
+| Q31 | DeepInfra | Yes. A DeepInfra-hosted model (default `Qwen/Qwen3.8-27B`) writes the one-line dispatches and is Intern's System 2. Anthropic is not used. |
+
+Known problem: **Intern does not start on Windows** (it imports the Unix-only `fcntl` module, and uses process groups and SIGHUP). This laptop has no WSL distribution and no Docker. Until it can run somewhere (WSL, a Mac, a Linux box or a Codespace), the report falls back to the same DeepInfra model called directly, and the report card says so. `INTERN_CMD` in `.env` overrides the command if a working install appears.
+
+Still open:
+
+| # | Open question | State |
+|---|---|---|
+| Q32 | Presentation | Required by rule 4. Proposed: a five-slide deck the user builds in Adobe Express from the outline in `docs/pitch.md`. Not yet confirmed. |
+| Q33 | Where Intern runs | Needs a Unix environment. Options: ask the organizers, borrow a Mac, or run the repo in a GitHub Codespace. Awaiting the user. |
+
+Submission (from the organizers): register the team at nace.ai/drexathon/submit with code `Drexathon2026` (team name, member names, contact email), keep the private team link, then add title, explanation, track, presentation, GitHub repo link and an optional demo URL, push all code and click **Finalize**. Only finalized entries are judged.
+
+## 5. How it works
+
+### 5.1 Agents
+
+| Tier | Who | Decides | Drex question |
+|---|---|---|---|
+| Army | Lee, Meade | Objectives for subordinates; whether to accept a protest | `choice` over objectives; `noul` on a protest |
+| Corps and division | Longstreet, Hood, Sickles, Warren, Chamberlain (and others as needed) | Obey, delay, protest or deviate; then the concrete order | `choice` over compliance; `choice` over legal orders |
+| Brigade | About 20 brigades | Stand, fall back, rout, countercharge | `choice`, driven by morale, losses, ammunition, leader persona |
+
+Units not under a commander's direct order follow unit behaviour: they hold ground, react to
+contact and break when morale fails.
+
+### 5.2 Turn loop (one turn = 20 to 30 minutes of battle time)
+
+1. Couriers already on the road advance; orders that arrive are placed in the receiver's `state`.
+2. Army commanders decide objectives.
+3. Subordinates decide compliance, then pick one legal order. If a human holds that commander, the human picks (by clicking, or by typing an order that Drex maps to a legal move).
+4. Brigades decide their reaction.
+5. Code resolves movement and combat with a seeded random source.
+6. Dispatch lines are written (DeepInfra model or template) and the state is broadcast to every browser tab.
+7. At dusk the battle ends; the end state is compared with history.
+
+### 5.3 Drex request shape
+
+One request per agent per turn. Persona, situation and standing orders go in `state`; the
+decisions are typed questions. Independent questions about the same state share one request;
+a decision that needs an earlier answer is a second request.
+
+```json
+{
+  "model": "<pinned id from GET /v1/models>",
+  "state": {
+    "you": { "name": "Daniel Sickles", "role": "III Corps", "traits": ["..."] },
+    "standing_order": { "from": "Meade", "text": "Hold the line on Cemetery Ridge..." },
+    "situation": { "time": "16:00", "position": "Cemetery Ridge (south)", "units": ["..."], "enemy_seen": ["..."] }
+  },
+  "questions": {
+    "compliance": {
+      "type": "choice",
+      "instructions": "How does this commander respond to the standing order?",
+      "criteria": { "obey": "...", "delay": "...", "protest": "...", "deviate": "..." }
+    }
+  }
+}
+```
+
+Rules taken from the Drex docs:
+
+- Pin a model id from `GET /v1/models` and check the `model` field of every response.
+- Up to 255 options per `choice`, 512 questions per request.
+- Free tier: 120 requests per minute, 8 in flight. A turn of about 28 agents fits.
+- Call only from the server; the `/v1` routes send no CORS header.
+- Probabilities are shown, never hidden: they are the "pull of history".
+
+### 5.4 NDI persona pipeline (run once, before the battle)
+
+1. For each commander, one or two short primary-source excerpts (public https URL, page range).
+2. `POST /v1/documents/extract` with a persona schema: temperament, risk appetite, attitude to orders, relationship to superior, signature decisions on July 2.
+3. Every field comes back `found`, `not_found` or `ambiguous` with a page citation and quote.
+4. Results are cached to `data/personas/*.json` so the demo never waits on a document job.
+
+Constraint: on free balance a document is capped at 3 Extract pages (10 Parse pages) unless
+auto-pay is on. Excerpts are chosen to fit. Source list: `docs/research/gettysburg-sources.md`.
+
+Source notes that affect the build:
+
+- The scanned Official Records PDFs are 60 to 105 MB and their page indices are estimates, so
+  the first NDI run must confirm the printed page number. Clean HTML fallbacks exist for 9 of
+  the 13 documents.
+- Chamberlain has two different July 6, 1863 texts: the Official Records version and the
+  handwritten Maine State Archives original (an 8-page scan, a good "messy file"). Use the
+  handwritten one for the NDI showcase.
+- Sickles, Hood and Warren left no official report for the day; their sources are later and
+  self-justifying. The persona profile should say so.
+
+### 5.5 Combat
+
+Deterministic formula over strength, terrain, morale, fatigue and ammunition, plus one seeded
+random factor. Same seed and same decisions give the same battle.
+
+### 5.6 Mock mode
+
+Until the Nace key exists, a mock decider returns plausible probabilities from persona weights
+so the engine and UI can be built and demoed offline. Switching to live Drex is one environment
+variable. The UI shows clearly which mode is running.
+
+## 6. Architecture
+
+```
+server/   Node + TypeScript: game engine, turn loop, Drex client, NDI client, DeepInfra dispatches,
+          WebSocket broadcast of game state
+web/      React + Vite + TypeScript: SVG campaign map, unit animation, commander panels,
+          probability bars, telegram cards, decision ledger
+data/     map graph, order of battle, historical decisions, cached personas
+docs/     plan.md (this file), research/, agents/
+```
+
+Environment variables (in `.env`, git-ignored): `NACE_API_KEY`, `DEEPINFRA_API_KEY`, `DEEPINFRA_MODEL`, `DECIDER=mock|drex`, `DREX_MODEL`, `PORT`.
+
+## 7. Visual direction and Adobe assets
+
+- Period campaign map: parchment, hachured ridges, engraved serif type, compass rose.
+- Unit blocks in Union blue and Confederate gray that march along roads; clashes shown as smoke and line flashes.
+- Couriers ride between headquarters as small animated riders.
+- Dispatches arrive as telegram cards with a typed-on effect.
+- Each commander has a panel: portrait, current order, and Drex's probabilities as ink bars.
+
+Firefly assets the user generates:
+
+| Asset | Count | Notes |
+|---|---|---|
+| Commander portraits | 7 | Lee, Longstreet, Hood, Meade, Sickles, Warren, Chamberlain; engraved or daguerreotype style, consistent framing |
+| Parchment map texture | 1 | Large, seamless if possible |
+| Title card | 1 | Optional, for the demo opening |
+
+### Firefly prompts
+
+Generate all seven portraits with the same prompt, style reference and aspect ratio (3:4) so
+they read as one set. Swap only the bracketed description. Save as
+`web/public/portraits/<surname>.png` (lowercase) and the texture as `web/public/parchment.jpg`.
+
+Portrait template:
+
+> Steel-engraved portrait in the style of an 1860s newspaper illustration, fine cross-hatching,
+> sepia ink on aged cream paper, head and shoulders, three-quarter view, plain background,
+> oval vignette, no text, no lettering. Subject: [description].
+
+| File | Description to insert |
+|---|---|
+| `lee.png` | a dignified Confederate general in his mid-fifties with white hair and a full white beard, gray uniform with three stars on the collar, calm and composed expression |
+| `longstreet.png` | a heavyset Confederate general in his early forties with a long, full dark-brown beard, gray uniform, stern and brooding expression |
+| `hood.png` | a tall Confederate general in his early thirties with a long tawny beard and sad, deep-set eyes, gray uniform |
+| `meade.png` | a lean Union general in his late forties with a graying beard, wire spectacles and a hooked nose, dark blue uniform, sharp and irritable expression |
+| `sickles.png` | a Union general in his early forties with a thick drooping moustache and no beard, dark blue uniform, confident and theatrical expression |
+| `warren.png` | a slight Union general in his early thirties with dark hair and a dark moustache, dark blue uniform, alert and intense expression |
+| `chamberlain.png` | a Union colonel in his mid-thirties with a long sweeping moustache and high forehead, dark blue uniform, scholarly and resolute expression |
+
+Parchment texture (16:9, largest size):
+
+> Blank antique map parchment, 1860s survey paper, warm cream and tan, subtle foxing, faint
+> fold creases and soft stains, even lighting, flat top-down view, no text, no lines, no drawings.
+
+Title card (optional, 16:9):
+
+> Steel engraving of rolling Pennsylvania farmland with two rocky hills at dusk, split-rail
+> fences, drifting cannon smoke, sepia ink on aged paper, wide panorama, no text.
+
+## 8. Demo script (5 minutes)
+
+1. **0:00** The claim: "every commander here is an agent, every decision is Drex."
+2. **0:30** NDI: Longstreet's own report becomes a persona, each trait citing its page.
+3. **1:15** Autopilot: the afternoon plays out as history recorded it; the ledger shows decisions, latency and cost.
+4. **2:30** Take over Sickles, type "hold Cemetery Ridge as ordered"; Drex maps it to a legal order and the battle diverges.
+5. **3:30** Click a decision: which traits moved it, with citations.
+6. **4:15** Dusk: council of war vote, end state against history, the fidelity score, a short clip of two tabs playing.
+
+## 9. Build order and cut line
+
+| Time (PST) | Work |
+|---|---|
+| before 11:00 | Plan, sources, Firefly prompts (code only if the rules allow) |
+| 11:00 to 11:40 | Scaffold; map graph, order of battle, engine, seeded combat, mock decider |
+| 11:40 to 12:20 | Drex client, agent tiers, chain of command, couriers |
+| 12:20 to 13:20 | Map UI, unit animation, commander panels, telegram cards |
+| 13:20 to 13:50 | NDI persona pipeline with cached results |
+| 13:50 to 14:20 | Take-over, typed orders, DeepInfra dispatches, decision ledger |
+| 14:20 to 14:40 | Fidelity score, explainability, council of war |
+| 14:40 to 15:00 | Portraits in, polish, record the multiplayer clip, submit |
+
+Cut order when time runs short (first to go at the top): multiplayer, council of war,
+explainability, reinforcement requests, DeepInfra dispatches (templates stay), brigade agents
+(fall back to rule-based).
+
+Never cut: map with moving units, Drex deciding for every commander with visible probabilities,
+one human take-over, NDI personas with citations.
+
+## 10. Risks
+
+| Risk | Mitigation |
+|---|---|
+| Nace key arrives late | Mock mode from the first minute |
+| Autopilot does not reproduce history | Fixed seed; persona and standing-order wording tuned against the documented decisions |
+| Rate limit (120 per minute, 8 in flight) | Request queue with concurrency 8; one request per agent per turn |
+| NDI page caps or slow jobs | Short excerpts; personas cached to disk before the demo |
+| Scope against four hours | The cut order above |
+| Sensitive subject (Civil War) | Neutral, documentary tone; sources cited |
+
+## 11. Status
+
+- [x] Research on Drex and NDI
+- [x] Agent-skills setup (`docs/agents/`, local-markdown issues under `.scratch/`)
+- [x] Design settled (rounds 1 to 3, name Clio, rules follow-ups Q27 to Q31)
+- [x] Primary sources and map references compiled (`docs/research/gettysburg-sources.md`), with the caveats recorded in section 5.4
+- [x] Scaffold: TypeScript, Express + WebSocket server, Vite + React client, shared contract in `shared/types.ts`
+- [x] Battle data: 17 map locations, 24 brigades, 7 commanders with cited authored personas (`server/data/gettysburg.ts`)
+- [x] Engine: three agent tiers, chain of command, protests and rulings, Warren's call, couriers, seeded combat, routs, wounds, end state (`server/game.ts`)
+- [x] Decider: live Drex client with model discovery, retries and a concurrency cap, plus the offline mock (`server/decider.ts`)
+- [x] Offline run verified (`npx tsx server/scripts/sim.ts`): about 205 decisions per battle; with the mock decider 10 of 10 checkpoints and 5 of 5 objectives match 1863. This proves the engine, not Drex.
+- [x] Human take-over, typed orders mapped by the decider, explain-by-ablation, council of war, after-action report: server side written, not yet exercised through the UI
+- [x] Scripts written, not yet run (need keys): `npm run personas` (NDI), `npm run fidelity`, `server/scripts/measure.ts`
+- [x] Map UI (`web/`): title screen, SVG campaign map, marching units, couriers, commander panels, order sheet, telegraph, ledger, timeline, explain card, end plate. Checked in the browser on the mock decider: it loads, a full battle animates, no console errors. Not yet checked: the whole layout at 1920x1080 on a projector, and the order sheet, explain card and end plate by hand.
+- [x] Server flows checked through the API on the mock decider: take-over, typed order ("Hold Cemetery Ridge as ordered" mapped to obey), council of war, template after-action report
+- [x] README, LICENSE, pitch outline (`docs/pitch.md`), dev launch config
+- [ ] Nace key ($35 promo code `DREXATHON`) and DeepInfra key in `.env`
+- [ ] First live Drex run; tune question wording against the checkpoints
+- [ ] NDI personas built and cached in `data/personas/`
+- [ ] Fidelity and measured-comparison numbers recorded
+- [ ] Intern running: a Windows shim (`tools/intern-windows-shim/`) now lets `intern --help` start on this laptop; a full headless report run is untested until the keys exist (Q33)
+- [ ] Firefly assets generated by the user (prompts in section 7) and placed in `web/public/`
+- [ ] Team registered; presentation; README; push; Finalize
+- [ ] Multiplayer tab recording (the server already supports a second tab claiming a commander)
