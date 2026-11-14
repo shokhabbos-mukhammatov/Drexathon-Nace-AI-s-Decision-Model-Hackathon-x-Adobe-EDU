@@ -5,6 +5,7 @@ import { MAP_H, MAP_W, byId, clock12, computeSlots, fmtInt } from '../geo';
 import { useImageOk, useStable } from '../useGame';
 import { CourierLayer } from './CourierLayer';
 import { MapBase, pickCorners } from './MapBase';
+import { TroopCanvas } from './TroopCanvas';
 import { UnitLayer } from './UnitLayer';
 
 const HOLDER_FILL: Record<Holder, string> = {
@@ -154,6 +155,7 @@ export function MapView({ state }: { state: GameState }) {
       <svg className="map-svg map-static" viewBox={`0 0 ${MAP_W} ${MAP_H}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <MapBase nodes={nodes} edges={edges} battle={state.battle ?? ''} date={state.date ?? ''} parchmentOk={parchmentOk} />
       </svg>
+      <TroopCanvas units={units} slots={slots} nodes={nodeMap} edges={edges} contested={contested} selectedId={selected} hoveredId={hovered} />
       <svg className="map-svg map-live" viewBox={`0 0 ${MAP_W} ${MAP_H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label={`Map of ${state.battle ?? 'the field'}`}>
         <defs>
           <pattern id="clio-contested" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -183,7 +185,7 @@ export function MapView({ state }: { state: GameState }) {
         })}
 
         <CourierLayer couriers={state.couriers ?? []} commanders={state.commanders ?? []} turn={state.turn ?? 0} nodes={nodeMap} edges={edges} />
-        <UnitLayer units={units} slots={slots} nodes={nodeMap} edges={edges} contested={contested} selectedId={selected} onHover={setHovered} onSelect={setSelected} />
+        <UnitLayer units={units} slots={slots} nodes={nodeMap} edges={edges} selectedId={selected} onHover={setHovered} onSelect={setSelected} />
       </svg>
 
       <AnimatePresence>
@@ -194,7 +196,7 @@ export function MapView({ state }: { state: GameState }) {
         <span className="lg lg-union">Union</span>
         <span className="lg lg-csa">Confederate</span>
         <span className="lg lg-reserve">In reserve</span>
-        <span className="lg lg-pips">squares morale · dots ammunition</span>
+        <span className="lg lg-pips">one dot is about fifty men</span>
       </div>
     </div>
   );

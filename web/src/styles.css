@@ -1055,6 +1055,16 @@ ol {
   display: block;
 }
 
+/* The soldiers: drawn between the printed map and the labels. */
+.troop-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
 .map-static {
   transform: translateZ(0);
   will-change: transform;
@@ -1086,6 +1096,19 @@ ol {
   stroke-linejoin: round;
   letter-spacing: 0.3px;
   pointer-events: none;
+}
+
+.unit-count {
+  font-family: var(--f-type);
+  fill: #5a4a3a;
+}
+
+.unit-tag.is-routed {
+  opacity: 0.6;
+}
+
+.unit-tag.is-reserve .unit-label {
+  font-style: italic;
 }
 
 .unit.is-routed {

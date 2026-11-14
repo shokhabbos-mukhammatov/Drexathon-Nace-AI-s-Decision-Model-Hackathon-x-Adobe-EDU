@@ -1,0 +1,46 @@
+{
+ "commander": "meade",
+ "built_by": "NDI Extract",
+ "built_at": "2026-11-14T19:53:38.225Z",
+ "sources": [
+  "https://archive.org/download/warofrebellion271unit/warofrebellion271unit.pdf"
+ ],
+ "traits": [
+  {
+   "id": "meade1_0",
+   "label": "Convenes senior counsel",
+   "text": "Meade gathers his corps commanders to seek their opinions on whether to remain in position or retreat, and whether to attack or wait.",
+   "citation": {
+    "doc": "Minutes of council, July 2, 1863 (Official Records, Ser. I, Vol. 27, Part 1, scan)",
+    "url": "https://archive.org/download/warofrebellion271unit/warofrebellion271unit.pdf",
+    "page": "pp. 73-74",
+    "quote": "Minutes of council, July 2, 1863",
+    "status": "found"
+   }
+  },
+  {
+   "id": "meade1_1",
+   "label": "Reports factual status",
+   "text": "Meade communicates the current state of the battle to the General-in-Chief, noting that the enemy has made no impression on his position and that prisoners have been taken.",
+   "citation": {
+    "doc": "Minutes of council, July 2, 1863 (Official Records, Ser. I, Vol. 27, Part 1, scan)",
+    "url": "https://archive.org/download/warofrebellion271unit/warofrebellion271unit.pdf",
+    "page": "pp. 73-74",
+    "quote": "The enemy thus far have made no impression upon my position.",
+    "status": "found"
+   }
+  },
+  {
+   "id": "meade1_2",
+   "label": "Maintains defensive posture",
+   "text": "Meade describes how the enemy's assault on his left center was repulsed with severe loss to the enemy, indicating a successful defensive command.",
+   "citation": {
+    "doc": "Minutes of council, July 2, 1863 (Official Records, Ser. I, Vol. 27, Part 1, scan)",
+    "url": "https://archive.org/download/warofrebellion271unit/warofrebellion271unit.pdf",
+    "page": "pp. 73-74",
+    "quote": "assaulted my left center twice, being upon both occasions handsomely repulsed",
+    "status": "found"
+   }
+  }
+ ]
+}

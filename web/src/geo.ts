@@ -140,15 +140,31 @@ export function unitWidth(u: Unit): number {
   return Math.max(30, Math.min(60, 12 + base * 0.95));
 }
 
+/** One dot on the map stands for about this many men. */
+export const DOT_MEN = 50;
+/** Spacing between dots in a formed line, in map units. */
+export const DOT_GAP = 5;
+/** Ranks deep in line of battle. */
+export const RANKS = 4;
+
+export function dotCount(strength: number): number {
+  return strength <= 0 ? 0 : Math.max(4, Math.round(strength / DOT_MEN));
+}
+
 export interface Slot {
+  /** Centre of the formation. */
   x: number;
   y: number;
   side: Side;
+  /** Length of the line along its front, and its depth, at full strength. */
+  front: number;
+  depth: number;
 }
 
 /**
- * Where each unit's block sits. Units at one node form up in columns of three,
- * Confederates west of the place, Union east of it.
+ * Where each unit forms up. A line of battle runs north to south, facing the enemy across the
+ * place: Confederates west of it, Union east. Units stand two to a column, further columns
+ * behind the first.
  */
 export function computeSlots(units: Unit[], nodes: Map<string, MapNode>): Map<string, Slot> {
   const groups = new Map<string, Unit[]>();
@@ -159,25 +175,33 @@ export function computeSlots(units: Unit[], nodes: Map<string, MapNode>): Map<st
     else groups.set(k, [u]);
   }
   const slots = new Map<string, Slot>();
+  const depth = RANKS * DOT_GAP;
+  const frontOf = (u: Unit) => Math.ceil(dotCount(u.strength0) / RANKS) * DOT_GAP;
   for (const [k, list] of groups) {
     const nodeId = k.slice(0, k.lastIndexOf('|'));
     const n = nodes.get(nodeId);
     if (!n) continue;
     list.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     const dir = list[0].side === 'confederate' ? -1 : 1;
-    const perCol = 3;
-    list.forEach((u, i) => {
-      const col = Math.floor(i / perCol);
-      const row = i % perCol;
-      const inCol = Math.min(perCol, list.length - col * perCol);
-      const x = n.x + dir * (44 + col * 70);
-      const y = n.y + (row - (inCol - 1) / 2) * 40 + 4;
-      slots.set(u.id, {
-        x: Math.max(40, Math.min(MAP_W - 40, x)),
-        y: Math.max(40, Math.min(MAP_H - 40, y)),
-        side: u.side,
-      });
-    });
+    const perCol = 2;
+    const gap = 24; // room for the label under each line
+    for (let c = 0; c * perCol < list.length; c++) {
+      const col = list.slice(c * perCol, c * perCol + perCol);
+      const total = col.reduce((a, u) => a + frontOf(u), 0) + gap * (col.length - 1);
+      let y = n.y - total / 2 - 4;
+      for (const u of col) {
+        const front = frontOf(u);
+        const x = n.x + dir * (36 + c * 56);
+        slots.set(u.id, {
+          x: Math.max(30, Math.min(MAP_W - 30, x)),
+          y: Math.max(30 + front / 2, Math.min(MAP_H - 40 - front / 2, y + front / 2)),
+          side: u.side,
+          front,
+          depth,
+        });
+        y += front + gap;
+      }
+    }
   }
   return slots;
 }
