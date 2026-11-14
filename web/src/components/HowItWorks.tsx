@@ -82,7 +82,7 @@ function Architecture() {
 const STEPS: { n: number; who: 'Code' | 'Drex' | 'Words'; title: string; text: string }[] = [
   { n: 1, who: 'Code', title: 'Couriers arrive', text: 'Orders and replies sent earlier reach the commanders they were sent to.' },
   { n: 2, who: 'Drex', title: 'The army commanders decide', text: 'Lee names the objective. Meade answers what he finds and sends each reserve where the line is threatened.' },
-  { n: 3, who: 'Drex', title: 'Subordinates answer their orders', text: 'Obey, delay, protest or act on their own judgement. A protest goes up the chain and the superior rules on it.' },
+  { n: 3, who: 'Drex', title: 'Subordinates answer their orders', text: 'Obey, delay, protest or act on their own judgement. A protest goes up the chain; a subordinate who disobeys is reported to his superior, who rules on it. Each commander knows what his side has heard so far.' },
   { n: 4, who: 'Drex', title: 'Brigades are committed', text: 'A commander judges when each brigade goes in, and whether one that has taken its ground pushes on.' },
   { n: 5, who: 'Code', title: 'The march', text: 'How far a column gets depends on the road, the ground it enters, any stream to ford and how tired it is.' },
   { n: 6, who: 'Drex', title: 'Brigades in contact react', text: 'Each one decides for itself: press, stand, countercharge or fall back.' },

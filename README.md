@@ -41,6 +41,7 @@ How the agents coordinate:
 - **Chain of command.** Lee and Meade set objectives. Their subordinates decide whether to obey, delay, protest or act on their own judgement.
 - **Protest and ruling.** A protest goes up the chain and the superior rules on it (Hood to Longstreet: "We must obey the orders of General Lee").
 - **Calls for help.** Warren, finding Little Round Top empty, sends for troops; each brigade commander decides for himself whether to answer.
+- **Word travels.** Each commander knows what a general of the day would have heard: his own side's orders, refusals and protests, reserves sent, ground won and lost. A decision you make as a player reaches the others the same way, and they answer it in character. A subordinate who disobeys is reported to his superior, who decides whether to let it stand or order him back.
 - **Brigades in contact** decide each half hour whether to press, stand, countercharge or fall back.
 - **Council of war.** At dusk Meade's generals vote, as they did that night.
 

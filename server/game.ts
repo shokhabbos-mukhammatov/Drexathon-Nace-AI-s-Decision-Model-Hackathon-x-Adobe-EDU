@@ -79,6 +79,10 @@ export class Game {
   private seq = 0;
   /** Half hours in a row with no fighting and no one on the move (fighting on past dusk only). */
   private quiet = 0;
+  /** What each side's commanders have heard: their own side's orders and refusals, ground won and lost. */
+  private news: { side: Side; turn: number; clock: string; text: string }[] = [];
+  /** A subordinate who set his order aside, waiting for his superior to hear of it and rule. */
+  private deviations: { subId: string; superiorId: string; original: keyof typeof OBJECTIVES; chosen: keyof typeof OBJECTIVES; turn: number }[] = [];
 
   constructor(private decider: Decider, private onChange: () => void) {
     for (const e of EDGES) {
@@ -97,7 +101,7 @@ export class Game {
     for (const [id, resolve] of this.resolvers) resolve(this.suggestions.get(id) ?? '');
     this.resolvers.clear(); this.suggestions.clear(); this.askLog.clear();
     this.rng = mulberry32(seed);
-    this.latencies = []; this.allDecisions = []; this.running = false; this.seq = 0; this.quiet = 0;
+    this.latencies = []; this.allDecisions = []; this.running = false; this.seq = 0; this.quiet = 0; this.news = []; this.deviations = [];
     this.control = {};
     for (const n of NODES) this.control[n.id] = INITIAL_CONTROL[n.id] ?? 'empty';
     this.umeta.clear(); this.cmeta.clear();
@@ -191,7 +195,15 @@ export class Game {
   private fighting(u: Unit) { return this.alive(u) && u.status !== 'routed'; }
   private at(nodeId: string, side?: Side) { return this.state.units.filter((u) => u.nodeId === nodeId && this.fighting(u) && (!side || u.side === side)); }
   private contested(nodeId: string) { return this.at(nodeId, 'union').length > 0 && this.at(nodeId, 'confederate').length > 0; }
+  private tell(side: Side | 'both', text: string) {
+    const t = this.state.turn; const clock = this.clockLabel(t);
+    for (const sd of side === 'both' ? (['union', 'confederate'] as Side[]) : [side]) this.news.push({ side: sd, turn: t, clock, text });
+    if (this.news.length > 120) this.news.splice(0, this.news.length - 120);
+  }
+
   private event(kind: BattleEvent['kind'], text: string, nodeId?: string, side?: Side) {
+    // Ground taken and lost, and a brigade breaking, are seen by both armies.
+    if (kind === 'capture' || kind === 'rout' || kind === 'wounded') this.tell('both', text);
     this.state.events.push({ id: `e${++this.seq}`, turn: this.state.turn, clock: this.state.clock, kind, text, nodeId, side });
     if (this.state.events.length > 60) this.state.events.splice(0, this.state.events.length - 60);
   }
@@ -288,6 +300,8 @@ export class Game {
         ...(c.traits.length ? { character: c.traits.map((t) => t.text) } : {}),
       },
       standing_order: c.standingOrder ? `From ${c.standingOrder.fromName}: ${c.standingOrder.text}` : 'none',
+      // What he has heard, as he would have heard it at the time: nothing says who or what chose it.
+      news_from_the_field: this.news.filter((n) => n.side === c.side).slice(-8).map((n) => `${n.clock}: ${n.text}`),
       situation: this.situation(c.side),
       ...extra,
     };
@@ -430,6 +444,7 @@ export class Game {
       this.emit();
 
       await Promise.all([this.leePhase(t), this.meadePhase(t), this.warrenPhase(t)]);
+      await this.deviationRulings(t);
       await Promise.all([this.longstreetPhase(t), this.sicklesPhase(t)]);
       await this.hoodPhase(t);
       await Promise.all(['lee', 'longstreet', 'hood', 'sickles'].map((id) => this.ordersFor(id, t)));
@@ -493,6 +508,7 @@ export class Game {
     });
     const pick = r.objective as keyof typeof OBJECTIVES;
     lee.intent = OBJECTIVES[pick].label;
+    if (pick !== current) this.tell('confederate', `Lee orders the First Corps to ${OBJECTIVES[pick].label.toLowerCase()}.`);
     if (first && pick === 'await') { m.objective = undefined; return; } // he will be asked again next half hour
     if (pick === current) return;
     m.objective = pick;
@@ -514,9 +530,13 @@ export class Game {
     });
     c.compliance = r.compliance as Compliance;
     const alt = wantsFlank ? 'flank_round_tops' : 'emmitsburg_road';
-    if (c.compliance === 'obey') { m.objective = m.orderObjective; m.complied = true; }
-    else if (c.compliance === 'deviate') { m.objective = alt; m.complied = true; }
-    else if (c.compliance === 'delay') { m.delays++; c.intent = 'Waiting until the corps is closed up'; return; }
+    if (c.compliance === 'obey') { m.objective = m.orderObjective; m.complied = true; this.tell('confederate', `Longstreet puts the First Corps in motion to ${OBJECTIVES[m.orderObjective as keyof typeof OBJECTIVES].label.toLowerCase()}.`); }
+    else if (c.compliance === 'deviate') {
+      m.objective = alt; m.complied = true;
+      this.tell('confederate', `Longstreet sets Lee's order aside and will ${OBJECTIVES[alt].label.toLowerCase()} instead.`);
+      this.deviations.push({ subId: 'longstreet', superiorId: 'lee', original: m.orderObjective as keyof typeof OBJECTIVES, chosen: alt, turn: t });
+    }
+    else if (c.compliance === 'delay') { m.delays++; c.intent = 'Waiting until the corps is closed up'; this.tell('confederate', 'Longstreet holds the First Corps back, waiting until it is closed up.'); return; }
     else {
       m.protests++;
       const granted = await this.ruling('lee', c, `General Longstreet asks leave to ${OBJECTIVES[alt].label.toLowerCase()} instead of the order given.`, { deny: 6, grant: 1 });
@@ -558,6 +578,44 @@ export class Game {
       }
     } else m.objective = c.compliance === 'deviate' ? alt : m.orderObjective;
     m.complied = true; c.intent = OBJECTIVES[m.objective as keyof typeof OBJECTIVES].label;
+    if (c.compliance === 'deviate') {
+      this.tell('confederate', `Hood disregards his orders and takes his division to ${OBJECTIVES[alt].label.toLowerCase()}.`);
+      this.deviations.push({ subId: 'hood', superiorId: 'longstreet', original: m.orderObjective as keyof typeof OBJECTIVES, chosen: alt, turn: t });
+    } else this.tell('confederate', `Hood's division goes in to ${OBJECTIVES[m.objective as keyof typeof OBJECTIVES].label.toLowerCase()}.`);
+  }
+
+  /**
+   * Word that a subordinate set his order aside reaches his superior the next half hour, and the
+   * superior, in his own character, either lets it stand or orders him back to the plan.
+   */
+  private async deviationRulings(t: number) {
+    const due = this.deviations.filter((d) => d.turn < t);
+    this.deviations = this.deviations.filter((d) => d.turn >= t);
+    for (const d of due) {
+      const sup = this.cmd(d.superiorId); const sub = this.cmd(d.subId);
+      if (!sup || !sub || sup.status !== 'active') continue;
+      const q: Question = {
+        id: 'deviation',
+        instructions: `Word reaches ${sup.rank} ${sup.name}: ${sub.rank} ${sub.name} has set aside his order to ${OBJECTIVES[d.original].label.toLowerCase()} and is acting on his own judgement, to ${OBJECTIVES[d.chosen].label.toLowerCase()}. What does ${sup.name.split(' ').pop()} do?`,
+        options: [
+          this.opt('recall', 'Orders him back to the plan', `Send a peremptory order: ${OBJECTIVES[d.original].text}`, 4),
+          this.opt('accept', 'Lets it stand', `Accept what is done and support him: ${OBJECTIVES[d.chosen].text}`, 1.5),
+        ],
+      };
+      const r = await this.decide({
+        agentId: sup.id, agentName: sup.name, side: sup.side, tier: sup.tier, commanderId: sup.id, dispatch: true, traits: sup.traits,
+        state: this.agentState(sup, { report_received: `${sub.name} has disregarded his orders.` }), questions: [{ q, kind: 'protest_ruling' }],
+      });
+      if (r.deviation === 'recall') {
+        this.courier('order', sup.id, sub.id, `You will ${OBJECTIVES[d.original].label.toLowerCase()} as ordered.`);
+        this.giveOrder(sup.id, sub.id, d.original);
+        for (const u of this.state.units) if (u.commanderId === sub.id) this.umeta.get(u.id)!.route = 0;
+        this.tell(sup.side, `${sup.name.split(' ').pop()} orders ${sub.name.split(' ').pop()} back to the plan.`);
+      } else {
+        if (sup.id === 'lee') this.cmeta.get('lee')!.objective = d.chosen;
+        this.tell(sup.side, `${sup.name.split(' ').pop()} lets ${sub.name.split(' ').pop()}'s change stand.`);
+      }
+    }
   }
 
   /** A superior rules on a subordinate's protest. Returns true if granted. */
@@ -573,6 +631,7 @@ export class Game {
       state: this.agentState(sup, { request_received: request }), questions: [{ q, kind: 'protest_ruling', historical: checkpoint ? 'deny' : undefined, checkpoint }],
     });
     this.courier('reply', superiorId, sub.id, r.ruling === 'grant' ? 'Request granted.' : 'The order stands.');
+    this.tell(sup.side, `${sub.name.split(' ').pop()} protests his orders; ${sup.name.split(' ').pop()} ${r.ruling === 'grant' ? 'grants the change' : 'refuses: the order stands'}.`);
     return r.ruling === 'grant';
   }
 
@@ -592,15 +651,18 @@ export class Game {
     });
     c.compliance = r.compliance as Compliance;
     const alt = toHold ? 'advance_salient' : 'hold_ridge';
-    if (c.compliance === 'delay') { m.delays++; c.intent = 'Waiting on his present ground'; return; }
+    if (c.compliance === 'delay') { m.delays++; c.intent = 'Waiting on his present ground'; this.tell('union', 'Sickles has not yet taken up the line he was given.'); return; }
     if (c.compliance === 'protest') {
       m.protests++;
       const granted = await this.ruling('meade', c, `General Sickles asks leave to ${OBJECTIVES[alt].label.toLowerCase()}.`, { deny: 4, grant: 1.5 });
       m.objective = granted ? alt : m.orderObjective; c.compliance = 'obey';
     } else m.objective = c.compliance === 'deviate' ? alt : m.orderObjective;
     m.complied = true; c.intent = OBJECTIVES[m.objective as keyof typeof OBJECTIVES].label;
-    if (m.objective === 'advance_salient') { c.nodeId = 'trostle'; this.event('note', 'The III Corps leaves Cemetery Ridge and marches for the Peach Orchard, colours flying.', 'cemetery_ridge_s', 'union'); }
-    else c.nodeId = 'cemetery_ridge_s';
+    if (m.objective === 'advance_salient') {
+      c.nodeId = 'trostle';
+      this.event('note', 'The III Corps leaves Cemetery Ridge and marches for the Peach Orchard, colours flying.', 'cemetery_ridge_s', 'union');
+      this.tell('both', 'The III Corps leaves Cemetery Ridge and advances to the Peach Orchard and the Emmitsburg Road.');
+    } else { c.nodeId = 'cemetery_ridge_s'; this.tell('union', 'Sickles holds the III Corps on Cemetery Ridge, as ordered.'); }
   }
 
   private async meadePhase(t: number) {
@@ -660,6 +722,7 @@ export class Game {
     });
     if (r.salient) {
       c.intent = r.salient === 'support' ? 'Feeding the reserves to the left' : r.salient === 'withdraw' ? 'Recalling the III Corps' : 'Holding the main line';
+      this.tell('union', r.salient === 'support' ? 'Meade leaves the III Corps where it stands and sends the reserves to support it.' : r.salient === 'withdraw' ? 'Meade orders the III Corps back to Cemetery Ridge.' : 'Meade keeps his reserves on the main line.');
       if (r.salient === 'withdraw') { sm.flags.recalled = true; this.giveOrder('meade', 'sickles', 'hold_ridge'); }
       m.flags.noSupport = r.salient === 'leave';
     }
@@ -667,6 +730,7 @@ export class Game {
       const target = r[`res_${u.id}`];
       if (!target || target === 'stay') continue;
       this.release(u, target, `${u.name} is ordered to ${this.nodeName(target)}.`);
+      this.tell('union', `Meade sends ${u.name} to ${this.nodeName(target)}.`);
       if (u.id === 'vincent') this.release(this.unit('maine20'), target);
     }
   }
@@ -714,6 +778,7 @@ export class Game {
         agentId: c.id, agentName: c.name, side: c.side, tier: 'corps', commanderId: c.id, dispatch: true, traits: c.traits,
         state: this.agentState(c), questions: [{ q, kind: 'reinforcement', historical: 'send_for_troops', checkpoint: 'warren_calls' }],
       });
+      this.tell('union', r.call === 'send_for_troops' ? 'Warren finds Little Round Top empty and sends for troops to hold it.' : 'Warren is watching the left from Little Round Top.');
       if (r.call === 'send_for_troops') { m.flags.callTurn = t; c.intent = 'Calling for troops'; this.courier('request', 'warren', 'vincent', 'Troops are wanted on Little Round Top at once.'); }
       else c.intent = 'Watching from the hill';
     }
