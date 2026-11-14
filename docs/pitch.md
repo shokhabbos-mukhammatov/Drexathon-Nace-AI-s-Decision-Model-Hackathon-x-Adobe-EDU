@@ -1,6 +1,6 @@
 # Clio: pitch outline (five slides, five minutes)
 
-Build the deck in Adobe Express; use the wartime portraits and the map. One idea per slide.
+The deck uses the wartime portraits and Clio's period palette. One idea per slide.
 
 ## The story to tell (thirty seconds, before slide 1)
 
@@ -48,5 +48,5 @@ Rules for telling it, so the story stays true:
 - First: put it in front of instructors who teach command decisions, such as Wide, and build the battles they teach next. (Say "we will ask", not "we have agreed", unless that is true.)
 - A battle is one data file plus its documents.
 - The same pattern rehearses any documented decision under pressure: incident response, a negotiation, a boardroom.
-- Tools used: Drex, NDI, Intern, DeepInfra, Adobe Firefly and Express.
+- Tools used: Drex, NDI, Intern, DeepInfra; Adobe Express and Firefly for the deck.
 - Visual: the seven portraits in a row.

@@ -2,8 +2,8 @@
 
 Clio is the muse of history. The name was chosen by the user on 2026-11-14.
 
-**Last updated:** 2026-11-14 14:11 PST
-**Phase:** working on live services end to end. Remaining: Intern-written report from a full run, Firefly assets, presentation, registration, merge and push.
+**Last updated:** 2026-11-14 14:40 PST
+**Phase:** built and deployed for the demo; pitch deck written. Adobe back in (user's call, 14:40): the user finishes the deck in Adobe Express with Firefly cover art. Remaining: that, registration and submission (user).
 **Hard deadline:** submission at 3:00 PM PST today. Build window opens 11:00 AM.
 
 This file is the single source of truth for what we are building and where we are.
@@ -351,6 +351,6 @@ one human take-over, NDI personas with citations.
 - [x] In-app page "How it works" (`web/src/components/HowItWorks.tsx`): parts, architecture diagram, one half hour, a worked decision, document to commander, measured figures. Linked from the top bar and the title screen; address `#how-it-works`.
 - [x] Fidelity re-measured after the movement change (live Drex, seed 1863): 8 of 9 documented decisions with NDI personas, 7 of 8 without. Ground at dusk: 3 of 5 key positions as in 1863 with personas, 5 of 5 without. The personas change behaviour (Hood protests, as he did; without one he goes around the Round Tops) but do not make the outcome more accurate. The pitch outline says so.
 - [ ] By-hand look at the whole layout at 1920x1080, the explain card and the end plate
-- [ ] Firefly parchment and title art (optional; portraits now come from wartime photographs)
+- [ ] Adobe (user's call, 14:40): deck exported as PPTX, finished in Adobe Express, cover art from Firefly. README, deck and pitch claim this; drop the claims if it is not done.
 - [ ] Team registered; presentation; README; push; Finalize
 - [ ] Multiplayer tab recording (the server already supports a second tab claiming a commander)

@@ -34,7 +34,7 @@ Each tool has one job it is best at. Code does everything that is not a judgemen
 | **NDI** (Nace Document Intelligence, Extract) | Reads each commander's own writing, mostly **1860s scans** on archive.org (the Official Records, the Joint Committee testimony, Longstreet's memoir), and extracts his character into traits, **each with the verbatim quote and page it rests on**. Those traits are what Drex reads when it decides for him. | **7 of 7 commanders, 23 cited traits, 8 sources**; the Official Records volumes are 93–105 MB scans. |
 | **Intern** (Nace agent harness) | Runs inside the product, headless, with **Drex as System 1** and a DeepInfra model as System 2. It **writes the after-action report** from the battle's decision log the moment the firing stops, and it **chose the commanders' portraits**: one run per commander, judging Wikimedia Commons candidates for date, subject and licence. | Report ready **about 2 minutes after dusk**; 7 portrait decisions. Runs on Windows with a small shim we wrote (`tools/intern-windows-shim/`). |
 | **DeepInfra** (Qwen3.8 27B) | The only model that writes words, and it **never decides**: a one-line dispatch in the commander's voice after Drex has chosen, Intern's System 2, and the baseline in our measured comparison. | One dispatch per command decision, with reasoning off (about 1 s each). |
-| **Adobe Express** | The pitch deck. | |
+| **Adobe Express + Firefly** | The pitch deck: finished in Adobe Express, with the cover art generated in Firefly. | The whole presentation. |
 
 ## Results we measured
 
