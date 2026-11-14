@@ -68,13 +68,21 @@ app.post('/api/explain', async (req, res) => {
 app.post('/api/council', async (_req, res) => {
   try { ok(res, await game.council()); } catch (e) { res.status(503).json({ error: (e as Error).message }); }
 });
-app.post('/api/report', (_req, res) => {
-  if (game.state.report.status !== 'writing') {
-    void writeReport(game.state.runId, game.runLog(), (r) => { game.state.report = r; broadcast(); })
-      .catch((e) => { game.state.report = { status: 'error', note: (e as Error).message }; broadcast(); });
-  }
-  ok(res);
-});
+/** Start the after-action report for the battle now in memory, unless it is already written or under way. */
+function startReport() {
+  const runId = game.state.runId;
+  if (game.state.report.status === 'writing' || game.state.report.status === 'done') return;
+  const set = (r: typeof game.state.report) => { if (game.state.runId === runId) { game.state.report = r; broadcast(); } };
+  void writeReport(runId, game.runLog(), set).catch((e) => set({ status: 'error', note: (e as Error).message }));
+}
+app.post('/api/report', (_req, res) => { startReport(); ok(res); });
+
+// Intern takes a minute or two, so it is set to work the moment the firing stops, not when the
+// button is pressed; by the time anyone asks for the report it is usually written.
+let reportedRun = '';
+setInterval(() => {
+  if (game.state.phase === 'ended' && reportedRun !== game.state.runId) { reportedRun = game.state.runId; startReport(); }
+}, 1500);
 
 // Serve the built frontend when it exists (npm run build), so one process is enough for a demo.
 const dist = path.join(process.cwd(), 'dist');

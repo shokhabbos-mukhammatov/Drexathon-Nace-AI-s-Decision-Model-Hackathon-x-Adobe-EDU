@@ -1,0 +1,72 @@
+[
+ {
+  "id": "lee",
+  "file": "Robert Edward Lee (3x4 cropped).jpg",
+  "page_url": "https://commons.wikimedia.org/wiki/File:Robert_Edward_Lee_(3x4_cropped).jpg",
+  "date": "1864-03",
+  "credit": "Julian Vannerson",
+  "license": "Public domain",
+  "chosen_by": "Intern",
+  "why": "1864 portrait photograph of Robert E. Lee from the Library of Congress, public domain."
+ },
+ {
+  "id": "longstreet",
+  "file": "Lieutenant General James Longstreet, 1863 (PORTRAITS 416).jpg",
+  "page_url": "https://commons.wikimedia.org/wiki/File:Lieutenant_General_James_Longstreet,_1863_(PORTRAITS_416).jpg",
+  "date": "1863 date QS:P571,+1863-00-00T00:00:00Z/9",
+  "credit": "Anthony, E. & H.T.",
+  "license": "Public domain",
+  "chosen_by": "Intern",
+  "why": "1863 portrait photograph by E. & H.T. Anthony, in public domain, showing Longstreet alone."
+ },
+ {
+  "id": "hood",
+  "file": "Portrait of General John Bell Hood in uniform.jpg",
+  "page_url": "https://commons.wikimedia.org/wiki/File:Portrait_of_General_John_Bell_Hood_in_uniform.jpg",
+  "date": "between 1861 and 1865 date QS:P,+1861-00-00T00:00:00Z/8,P1319,+1861-00-00T00:00:00Z/9,P1326,+1865-00-00T00:00:00Z/9",
+  "credit": "Confederate Memorial Literary Society",
+  "license": "Public domain",
+  "chosen_by": "Intern",
+  "why": "Public-domain 3/4 portrait photograph of Hood in uniform, dated between 1861 and 1865 (Confederate Memorial Literary Society)."
+ },
+ {
+  "id": "meade",
+  "file": "Major General George G Meade, August 1863 (PORTRAITS 2635).jpg",
+  "page_url": "https://commons.wikimedia.org/wiki/File:Major_General_George_G_Meade,_August_1863_(PORTRAITS_2635).jpg",
+  "date": "Taken on 1 August 1863",
+  "credit": "Brady's National Photographic Portrait Gallery",
+  "license": "Public domain",
+  "chosen_by": "Intern",
+  "why": "Public-domain photograph of Meade alone, taken 1 August 1863 by Brady's National Photographic Portrait Gallery."
+ },
+ {
+  "id": "sickles",
+  "file": "Major General Daniel Edgar Sickles of 70th New York Infantry Regiment and General Staff U.S. Volunteers Infantry Regiment in uniform) - From negative in Brady's National Portrait Gallery LCCN2016646188.jpg",
+  "page_url": "https://commons.wikimedia.org/wiki/File:Major_General_Daniel_Edgar_Sickles_of_70th_New_York_Infantry_Regiment_and_General_Staff_U.S._Volunteers_Infantry_Regiment_in_uniform)_-_From_negative_in_Brady%27s_National_Portrait_Gallery_LCCN2016646188.jpg",
+  "date": "between 1861 and 1865 date QS:P,+1861-00-00T00:00:00Z/8,P1319,+1861-00-00T00:00:00Z/9,P1326,+1865-00-00T00:00:00Z/9",
+  "credit": "Brady's National Photographic Portrait Galleries, photographer",
+  "license": "Public domain",
+  "chosen_by": "Intern",
+  "why": "Photograph dated 1861-1865 from Brady's National Portrait Gallery (Library of Congress), public domain, showing Sickles alone in uniform."
+ },
+ {
+  "id": "warren",
+  "file": "G. K. Warren, Maj. General LCCN99471847.jpg",
+  "page_url": "https://commons.wikimedia.org/wiki/File:G._K._Warren,_Maj._General_LCCN99471847.jpg",
+  "date": "between 1861 and 1865 date QS:P,+1861-00-00T00:00:00Z/8,P1319,+1861-00-00T00:00:00Z/9,P1326,+1865-00-00T00:00:00Z/9",
+  "credit": "Civil War Glass Negatives",
+  "license": "Public domain",
+  "chosen_by": "Intern",
+  "why": "Sole-occupant photographic print from the Library of Congress Civil War Glass Negatives, dated between 1861 and 1865, public domain."
+ },
+ {
+  "id": "chamberlain",
+  "file": "Joshua Chamberlain - Brady-Handy.jpg",
+  "page_url": "https://commons.wikimedia.org/wiki/File:Joshua_Chamberlain_-_Brady-Handy.jpg",
+  "date": "between 1860 and 1865 date QS:P,+1860-00-00T00:00:00Z/8,P1319,+1860-00-00T00:00:00Z/9,P1326,+1865-00-00T00:00:00Z/9",
+  "credit": "Mathew Benjamin Brady",
+  "license": "Public domain",
+  "chosen_by": "Intern",
+  "why": "Public domain Mathew Brady studio portrait held by the Library of Congress, dated 1860–1865, taken during his Civil War service."
+ }
+]

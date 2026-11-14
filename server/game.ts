@@ -103,7 +103,7 @@ export class Game {
       this.cmeta.set(c.id, { seed: c, complied: false, delays: 0, protests: 0, flags: {} });
       return {
         id: c.id, name: c.name, rank: c.rank, role: c.role, side: c.side, tier: c.tier, superiorId: c.superiorId,
-        nodeId: c.nodeId, portrait: `/portraits/${c.id}.png`,
+        nodeId: c.nodeId, portrait: this.portraitFor(c.id),
         traits: personas ? (ndi ?? c.traits) : [],
         personaSource: personas ? (ndi ? 'ndi' : 'authored') : 'none',
         controlledBy: null, status: 'active',
@@ -138,6 +138,14 @@ export class Game {
     this.refreshObjectives();
     this.event('note', `${BATTLE.date}, ${this.clockLabel(0)}. The III Corps holds the low southern end of Cemetery Ridge. Longstreet's divisions are filing into the woods opposite.`);
     this.emit();
+  }
+
+  /** The portrait Intern chose for this commander (web/public/portraits), whichever format it came in. */
+  private portraitFor(id: string): string {
+    for (const ext of ['jpg', 'png', 'webp']) {
+      if (fs.existsSync(path.join(ROOT, 'web', 'public', 'portraits', `${id}.${ext}`))) return `/portraits/${id}.${ext}`;
+    }
+    return '';
   }
 
   private loadPersona(id: string): Trait[] | null {

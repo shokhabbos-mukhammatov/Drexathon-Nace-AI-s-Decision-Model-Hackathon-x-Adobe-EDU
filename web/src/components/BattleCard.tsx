@@ -20,7 +20,7 @@ function Bar({ value, tone }: { value: number; tone?: 'warn' }) {
   );
 }
 
-function BattleCardImpl({ state, node, onClose }: { state: GameState; node: MapNode; onClose: () => void }) {
+function BattleCardImpl({ state, node, at, onClose }: { state: GameState; node: MapNode; at?: [number, number]; onClose: () => void }) {
   const info = useMemo(() => {
     const here = (state.units ?? []).filter((u) => u.nodeId === node.id && u.strength > 0 && !u.inReserve);
     const sides: Side[] = ['confederate', 'union'];
@@ -51,8 +51,9 @@ function BattleCardImpl({ state, node, onClose }: { state: GameState; node: MapN
     return { cols, reports, holder, odds };
   }, [state.units, state.decisions, state.events, state.objectives, node.id]);
 
-  const left = (node.x / MAP_W) * 100;
-  const top = (node.y / MAP_H) * 100;
+  // `at` is the marker's place on screen when the map is zoomed.
+  const left = ((at?.[0] ?? node.x) / MAP_W) * 100;
+  const top = ((at?.[1] ?? node.y) / MAP_H) * 100;
   const flipX = left > 55;
   const flipY = top > 50;
 
@@ -93,8 +94,8 @@ function BattleCardImpl({ state, node, onClose }: { state: GameState; node: MapN
           <section key={col.side} className={`bc-side side-${col.side}`}>
             <h3>{SIDE_WORD[col.side]}</h3>
             <div className="bc-total">
-              <b>{fmtInt(col.men)}</b> men in line
-              <span>{col.lost > 0 ? `${fmtInt(col.lost)} lost today` : 'no losses yet'}</span>
+              <b>{fmtInt(col.men)}</b> men
+              <span>{col.lost > 0 ? `${fmtInt(col.lost)} lost` : 'no losses yet'}</span>
             </div>
             <div className="bc-row bc-row-total">
               <span>Morale</span>
@@ -108,20 +109,7 @@ function BattleCardImpl({ state, node, onClose }: { state: GameState; node: MapN
                     {fmtInt(u.strength)} of {fmtInt(u.strength0)}
                   </em>
                 </div>
-                <div className="bc-unit-leader">{u.leader}</div>
-                <div className="bc-row">
-                  <span>Morale</span>
-                  <Bar value={u.morale} tone="warn" />
-                </div>
-                <div className="bc-row">
-                  <span>Ammunition</span>
-                  <Bar value={u.ammo} tone="warn" />
-                </div>
-                <div className="bc-row">
-                  <span>Fatigue</span>
-                  <Bar value={u.fatigue} />
-                </div>
-                <div className="bc-choice">
+                                <div className="bc-choice">
                   {u.status === 'routed' ? 'Broken and streaming to the rear' : choice ? (
                     <>
                       {choice.label} <small>Drex {pct(choice.p)}</small>
@@ -135,7 +123,7 @@ function BattleCardImpl({ state, node, onClose }: { state: GameState; node: MapN
         ))}
       </div>
 
-      {info.reports.length > 0 && (
+      {info.reports.length > 0 && false && (
         <div className="bc-reports">
           <h3>Reports from this fight</h3>
           {info.reports.map((e) => (

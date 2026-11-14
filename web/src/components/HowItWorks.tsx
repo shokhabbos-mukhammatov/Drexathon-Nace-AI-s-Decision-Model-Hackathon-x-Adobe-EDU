@@ -155,7 +155,7 @@ function HowItWorksImpl({ onClose }: { onClose: () => void }) {
               </li>
             ))}
           </ol>
-          <p>When you hold a commander, his decisions in steps 2 and 3 wait for you. Drex still answers first, and its answer is shown faintly as what the real commander would likely have done. You may click an option or write the order in your own words; Drex then reads your sentence and maps it to one of the legal options.</p>
+          <p>When you hold a commander, his decisions in steps 2 and 3 wait for you. Drex still answers first, and the choice it expects is marked “likely in 1863”. You may click an option or write the order in your own words; Drex then reads your sentence and maps it to one of the legal options.</p>
         </section>
 
         <section id="how-decision">

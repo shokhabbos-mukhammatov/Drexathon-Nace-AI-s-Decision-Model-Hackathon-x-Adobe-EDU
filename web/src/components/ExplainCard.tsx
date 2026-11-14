@@ -49,7 +49,10 @@ export function ExplainCard({ decision, post, onClose }: Props) {
           Why this decision · {decision.agentName} · {clock12(decision.clock)}
         </p>
         <h2>{decision.question}</h2>
-        <ProbBars options={decision.options} chosen={decision.chosen} historical={decision.historical} />
+        <details className="explain-odds">
+          <summary>All the odds</summary>
+          <ProbBars options={decision.options} chosen={decision.chosen} historical={decision.historical} />
+        </details>
 
         <h3>
           What moved the choice of “{chosenLabel}”

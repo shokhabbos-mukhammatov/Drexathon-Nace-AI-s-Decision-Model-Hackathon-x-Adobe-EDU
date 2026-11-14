@@ -1,1 +1,1 @@
-import signal, os; [setattr(signal, n, getattr(signal, n, signal.SIGTERM)) for n in ("SIGHUP", "SIGKILL")]; os.killpg = getattr(os, "killpg", lambda pid, sig: os.kill(pid, signal.SIGTERM))
+import signal, os; [setattr(signal, n, getattr(signal, n, signal.SIGTERM)) for n in ("SIGHUP", "SIGKILL")]; os.killpg = getattr(os, "killpg", lambda pid, sig, _os=os, _s=signal: _os.kill(pid, _s.SIGTERM))

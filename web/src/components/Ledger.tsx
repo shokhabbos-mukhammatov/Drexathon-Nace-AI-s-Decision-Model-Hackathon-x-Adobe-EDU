@@ -24,8 +24,15 @@ function LedgerImpl({ ledger, mode, model }: Pick<GameState, 'ledger' | 'mode' |
           {live ? 'Live Drex' : 'Mock decider'}
         </span>
       </header>
-      {live && model && <p className="ledger-model">{model}</p>}
-      {!live && <p className="ledger-model is-mock">Figures below are placeholders until Drex is switched on.</p>}
+      {!live && <p className="ledger-model is-mock">Offline: figures are placeholders.</p>}
+      <div className="ledger-big">
+        <div><b>{fmtInt(l.decisions)}</b><span>decisions</span></div>
+        <div><b>{l.medianMs > 0 ? `${Math.round(l.medianMs)} ms` : '—'}</b><span>each</span></div>
+        <div><b>{fmtUsd(l.costUsd)}</b><span>paid to Drex</span></div>
+        {cheaper && <div className="is-ratio"><b>{cheaper}</b><span>cheaper than a frontier LLM</span></div>}
+      </div>
+      <details className="ledger-more">
+        <summary>Details{live && model ? ` · ${model}` : ''}</summary>
       <table>
         <tbody>
           <tr>
@@ -66,7 +73,8 @@ function LedgerImpl({ ledger, mode, model }: Pick<GameState, 'ledger' | 'mode' |
           )}
         </tbody>
       </table>
-      {(cheaper || faster) && (
+      </details>
+      {false && (cheaper || faster) && (
         <p className="ledger-ratio">
           {cheaper && (
             <span>

@@ -121,6 +121,19 @@ export default function App() {
           </aside>
 
           <main className="stage">
+            <p className={`stage-next ${myPending.length > 0 ? 'is-urgent' : ''}`} aria-live="polite">
+              {myPending.length > 0
+                ? 'Your order is waiting.'
+                : state.phase === 'ended'
+                  ? 'Dusk. Press “The field at nightfall” to see how it ended.'
+                  : state.turn === 0 && !state.auto && state.phase === 'ready'
+                    ? 'Press “Let history run”, or first take command of a general.'
+                    : state.auto
+                      ? 'History is running. Take command of any general at any time.'
+                      : state.phase === 'ready'
+                        ? 'Advance a turn, or let history run.'
+                        : 'The commanders are deciding…'}
+            </p>
             <MapView state={state} />
           </main>
 

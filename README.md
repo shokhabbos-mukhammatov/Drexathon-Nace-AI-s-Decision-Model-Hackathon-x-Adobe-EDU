@@ -17,9 +17,9 @@ Built at Drexathon (Nace AI x Adobe EDU), November 14, 2026. Track: Swarm Intell
 |---|---|
 | **Drex** (Nace decision model) | Makes every agent decision: about 200 per battle across three tiers (army, corps and division, brigade). Each is a typed `choice` with a probability for every option, shown on screen. It also reads a player's typed order and maps it to a legal move, and powers "why?" by re-asking with one trait removed. |
 | **NDI** (Nace Document Intelligence) | Reads each commander's reports, letters and testimony and extracts his persona, with the page and quote for every trait (`npm run personas`). |
-| **Intern** (Nace agent harness) | Writes the after-action report from the battle's decision log, running headless with Drex as its System 1 and a DeepInfra model as its System 2 (`server/report.ts`). |
+| **Intern** (Nace agent harness) | Writes the after-action report from the battle's decision log, running headless with Drex as its System 1 and a DeepInfra model as its System 2 (`server/report.ts`). It also chose each commander's portrait: given the candidate images from Wikimedia Commons with their dates and licences, it picked a public-domain photograph of the man alone, taken in his lifetime. |
 | **DeepInfra** | Hosts the one generative model, which only writes words: the one-line dispatch after Drex has decided, and the report. |
-| **Adobe Firefly** | Commander portraits, parchment texture and title art. |
+| **Adobe Firefly** | Parchment texture and title art (optional). |
 
 Code owns everything that should not be a judgement: the map, legal moves, movement, combat
 arithmetic (seeded, so a run is repeatable) and the turn sequence.
@@ -60,6 +60,15 @@ npm run dev             # http://localhost:5173
 Without keys it runs on an offline mock decider, clearly labelled, so the engine and interface
 can be tried anywhere.
 
+## Playing it
+
+- A banner at the top of the map always says what to do next.
+- **Let history run** plays the afternoon; **Take command** on any general's panel puts you in his place. When it is your turn an order sheet opens: pick one of the choices (the one marked "likely in 1863" is what Drex expects the real general to do), or write the order in your own words.
+- Tap the crossed sabres on a fight to see both sides; tap "why?" on a decision to see which traits moved it.
+- At dusk, **The field at nightfall** shows the ground against 1863, the council of war and Intern's after-action report.
+
+On the map, scroll to zoom (up to 5×) and drag to move; double-click the map or press "Whole field" to return to the full view. Zoomed in, each unit also shows its commander, morale, ammunition, fatigue and current order.
+
 The app explains itself: **How it works** in the top bar (or `http://localhost:5173/#how-it-works`)
 opens a page with the parts, an architecture diagram, the sequence of one half hour, a worked
 decision, the document-to-commander pipeline and the measured figures.
@@ -90,6 +99,10 @@ docs/plan.md         design decisions and status
 - Intern imports Unix-only modules and does not start on Windows without the small shim in `tools/intern-windows-shim/`. If Intern is missing or fails, the report is written by the same DeepInfra model called directly, and the report says so.
 - The scanned Official Records volumes are 60 to 105 MB; the persona builder uses verified clean-text copies of the same pages where they exist, and the handwritten Chamberlain report as the scanned example.
 - Sickles, Hood and Warren left no report for the day; their sources are later and self-justifying.
+
+## Portraits
+
+Wartime photographs from Wikimedia Commons (mostly the Library of Congress and Brady's studio), all public domain, chosen by Intern from candidates with their dates and licences and checked by eye. Source page, date, credit and the reason for each choice are in [web/public/portraits/credits.json](web/public/portraits/credits.json).
 
 ## License
 

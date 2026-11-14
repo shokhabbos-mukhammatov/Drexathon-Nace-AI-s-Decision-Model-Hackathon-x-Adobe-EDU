@@ -2,7 +2,7 @@
 
 Clio is the muse of history. The name was chosen by the user on 2026-11-14.
 
-**Last updated:** 2026-11-14 13:10 PST
+**Last updated:** 2026-11-14 13:56 PST
 **Phase:** working on live services end to end. Remaining: Intern-written report from a full run, Firefly assets, presentation, registration, merge and push.
 **Hard deadline:** submission at 3:00 PM PST today. Build window opens 11:00 AM.
 
@@ -67,7 +67,7 @@ What this means for us:
 | Q4/Q9 | Simulation shape | A map with units moving, limited freedom. Units directly under a commander take orders; units not directly controlled follow their own unit behaviour. Turns are 20 to 30 minutes of battle time. Code lists every legal order (hold, march to X, attack X, fall back, reinforce Y) and Drex picks one. Extra features wanted here to make it strong for judges (see section 4). |
 | Q10 | Coordination | Two tiers at minimum: Lee and Meade set objectives; Longstreet, Hood, Sickles, Warren and Chamberlain receive the order in their `state` and Drex decides whether they obey, drag their feet or deviate, based on persona. Extra features wanted here too (see section 4). |
 | Q11 | Combat resolution | Code, with a fixed seed. Drex decides; arithmetic stays in code so a run is repeatable and a changed outcome traces to a changed decision. |
-| Q3/Q12 | Runtime LLM | Drex makes every decision. The user may type an order in plain English and Drex maps it to a legal move. A DeepInfra-hosted model writes a one-line in-character dispatch after Drex has decided (changed from a small LLM by Q31); templates are the fallback. |
+| Q3/Q12 | Runtime LLM | Drex makes every decision. The user may type an order in plain English and Drex maps it to a legal move. A DeepInfra-hosted model writes a one-line in-character dispatch after Drex has decided (changed from the build Haiku by Q31); templates are the fallback. |
 | Q5/Q13 | Players | One user on one laptop can take over any commander at any decision point. Multiplayer: the server holds the game state so a second browser tab can claim another commander. No accounts, no lobby. Built last, cut first, shown only as a recording. |
 | Q6 | NDI | Real primary sources (reports, letters, memoir excerpts) go through NDI Extract to build each commander's persona profile; every trait cites a page. |
 | Q7 | Stack | TypeScript end to end: Node server, React, animated SVG map. |
@@ -338,11 +338,16 @@ one human take-over, NDI personas with citations.
 - [x] Units drawn as formations of soldiers (one dot is about fifty men): column of fours on the road, four-rank line in position, wavering and routing, losses one man at a time, no enclosing outlines (`web/src/components/TroopCanvas.tsx`)
 - [x] Detailed countryside layer on the map: relief, streams, woods, fields, 22 named farms, minor roads, walls, the town (`web/src/components/Countryside.tsx`). A schematic, not a survey.
 - [x] Ground affects movement (user request): march time per road depends on road or cross-country, the terrain entered, fords and fatigue; a column can end the half hour part-way along the road and is shown there with the reason. The battle now starts at 2:30 PM with 11 turns so the attack still develops before dusk.
+- [x] Simpler screens (user request: the interface was overloaded when taking actions or reading cards). Order sheet: one question, the choices as plain buttons, a single "likely in 1863" mark, writing your own order folded away. Reserve orders: pre-set to the likeliest choice, one "Send orders". Commander panels: the latest decision in one line. Battle card: one line per brigade. Ledger: three figures, details folded. Explanation card: full odds folded. A banner at the top of the map always says what to do next ("Your order is waiting.", "Press Let history run, or first take command of a general.").
+- [x] Assistant attribution removed from the repository and its history at the user's request (no co-author trailers; agent configuration files kept out of version control).
+- [x] Map zoom (user request): mouse wheel zooms about the pointer up to 5×, drag pans, double-click or "Whole field" resets; at 1× the view is unchanged. SVG layers zoom through their viewBox and the soldiers' canvas draws through the same window, so both stay sharp. Labels grow more slowly than the map, and from 1.8× each unit shows its commander, morale, ammunition, fatigue and order. Hover and battle cards follow the zoom; the hover card now anchors to a marching column's actual place on the road. (`web/src/useMapView.ts`)
+- [x] After-action report fixed (user report: it stayed on "being written"). Intern wrote the file but did not exit, so the server waited out its five-minute limit. Now the file is taken as soon as it stops growing, the report starts on its own at dusk, and Intern runs with PYTHONUTF8=1 (it crashed printing ✗ on the Windows console). Measured: battle ended 13:39:34, Intern's 481-word report ready about two minutes later.
+- [x] Portraits: Intern chose a wartime, public-domain photograph for each of the seven from Wikimedia Commons candidates (one Intern run per commander, URLs taken from the Commons data, not from the model). Checked by eye; framed on the face in each oval. Credits in `web/public/portraits/credits.json`. Firefly portraits are no longer needed.
 - [x] Battle card: tapping the crossed sabres on a contested place shows both sides of that fight (`web/src/components/BattleCard.tsx`)
 - [x] Decision ledger moved to the footer so the side columns are all commanders
 - [x] In-app page "How it works" (`web/src/components/HowItWorks.tsx`): parts, architecture diagram, one half hour, a worked decision, document to commander, measured figures. Linked from the top bar and the title screen; address `#how-it-works`.
 - [x] Fidelity re-measured after the movement change (live Drex, seed 1863): 8 of 9 documented decisions with NDI personas, 7 of 8 without. Ground at dusk: 3 of 5 key positions as in 1863 with personas, 5 of 5 without. The personas change behaviour (Hood protests, as he did; without one he goes around the Round Tops) but do not make the outcome more accurate. The pitch outline says so.
 - [ ] By-hand look at the whole layout at 1920x1080, the explain card and the end plate
-- [ ] Firefly assets generated by the user (prompts in section 7) and placed in `web/public/`
+- [ ] Firefly parchment and title art (optional; portraits now come from wartime photographs)
 - [ ] Team registered; presentation; README; push; Finalize
 - [ ] Multiplayer tab recording (the server already supports a second tab claiming a commander)

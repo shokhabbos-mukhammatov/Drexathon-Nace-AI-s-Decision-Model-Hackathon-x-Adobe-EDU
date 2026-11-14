@@ -31,19 +31,41 @@ function internCommand(): string | null {
   return 'intern';
 }
 
-function runIntern(cwd: string, timeoutMs = 330_000): Promise<{ ok: boolean; note: string }> {
+/**
+ * Runs Intern on the run folder. Intern writes after-action.md and then carries on for a while
+ * (its closing reply, System 1's checks), so we do not wait for the process to exit: as soon as
+ * the file is on disk and has stopped growing, the report is taken and the process is ended.
+ */
+function runIntern(cwd: string, file: string, timeoutMs = 300_000): Promise<{ ok: boolean; note: string }> {
   return new Promise((resolve) => {
     const cmd = internCommand();
     if (!cmd) return resolve({ ok: false, note: 'Intern is not installed' });
     if (!process.env.NACE_API_KEY || !process.env.DEEPINFRA_API_KEY) return resolve({ ok: false, note: 'Intern needs NACE_API_KEY and DEEPINFRA_API_KEY' });
     const args = ['-p', '--system1', process.env.INTERN_SYSTEM1 || 'drex-latest', '--system2', `deepinfra/${deepinfraModel()}`, '--no-session', '--no-memory', '--max-turns', '8', '--', TASK];
     let out = '';
-    const child = spawn(cmd, args, { cwd, env: process.env, shell: false });
-    const timer = setTimeout(() => { child.kill('SIGTERM'); resolve({ ok: false, note: 'Intern timed out' }); }, timeoutMs);
+    let settled = false;
+    let lastSize = -1;
+    // PYTHONUTF8: on Windows Intern prints characters the console code page cannot encode.
+    const child = spawn(cmd, args, { cwd, env: { ...process.env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' }, shell: false });
+    const finish = (r: { ok: boolean; note: string }) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer); clearInterval(watch);
+      try { child.kill(); } catch { /* already gone */ }
+      resolve(r);
+    };
+    const watch = setInterval(() => {
+      try {
+        const size = fs.statSync(file).size;
+        if (size > 300 && size === lastSize) finish({ ok: true, note: 'ok' });
+        lastSize = size;
+      } catch { /* not written yet */ }
+    }, 900);
+    const timer = setTimeout(() => finish({ ok: false, note: 'Intern timed out' }), timeoutMs);
     child.stdout.on('data', (b) => (out += b));
     child.stderr.on('data', (b) => (out += b));
-    child.on('error', (e) => { clearTimeout(timer); resolve({ ok: false, note: `Intern could not start: ${e.message}` }); });
-    child.on('close', (code) => { clearTimeout(timer); resolve({ ok: code === 0, note: code === 0 ? 'ok' : `Intern exited ${code}: ${out.slice(-300)}` }); });
+    child.on('error', (e) => finish({ ok: false, note: `Intern could not start: ${e.message}` }));
+    child.on('close', (code) => finish({ ok: code === 0 && fs.existsSync(file), note: code === 0 ? 'ok' : `Intern exited ${code}: ${out.slice(-300)}` }));
   });
 }
 
@@ -72,7 +94,7 @@ export async function writeReport(runId: string, log: any, set: (r: Report) => v
   const file = path.join(dir, 'after-action.md');
   try { fs.rmSync(file, { force: true }); } catch { /* fresh */ }
 
-  const intern = await runIntern(dir);
+  const intern = await runIntern(dir, file);
   if (intern.ok && fs.existsSync(file)) {
     return set({ status: 'done', by: 'intern', markdown: fs.readFileSync(file, 'utf8'), note: `Written by Intern (System 1: Drex, System 2: ${deepinfraModel()} on DeepInfra)` });
   }

@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Commander, GameState, Holder, MapNode, Unit } from '../../../shared/types';
-import { MAP_H, MAP_W, byId, clock12, computeSlots, fmtInt } from '../geo';
+import { MAP_H, MAP_W, byId, clock12, computeSlots, fmtInt, pointAt, roadCurve } from '../geo';
 import { useImageOk, useStable } from '../useGame';
 import { BattleCard } from './BattleCard';
 import { CourierLayer } from './CourierLayer';
 import { MapBase, pickCorners } from './MapBase';
 import { TroopCanvas } from './TroopCanvas';
 import { UnitLayer } from './UnitLayer';
+import { MAX_ZOOM, project, useMapView, viewBox } from '../useMapView';
 
 const HOLDER_FILL: Record<Holder, string> = {
   union: '#2f4b7c',
@@ -147,6 +148,8 @@ export function MapView({ state }: { state: GameState }) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [battle, setBattle] = useState<string | null>(null);
+  const { view, frameRef, onPointerDown, onClickCapture, zoomBy, reset } = useMapView();
+  const vb = viewBox(view);
 
   const contested = useMemo(() => {
     const sides = new Map<string, Set<string>>();
@@ -165,17 +168,33 @@ export function MapView({ state }: { state: GameState }) {
   const shownId = hovered ?? selected;
   const shown = shownId ? units.find((u) => u.id === shownId) : undefined;
   const shownSlot = shown ? slots.get(shown.id) : undefined;
+  // Where the unit actually is: on the road if it is marching, else at its place in line.
+  const shownAt = useMemo((): [number, number] | null => {
+    if (!shown || !shownSlot) return null;
+    if (shown.moving) {
+      const road = roadCurve(edges, nodeMap, shown.nodeId, shown.moving.to);
+      if (road.length > 1) return pointAt(road, Math.max(0, shown.moving.progress - 0.08)) as [number, number];
+    }
+    return [shownSlot.x, shownSlot.y];
+  }, [shown, shownSlot, edges, nodeMap]);
   const cmdById = useMemo(() => byId(state.commanders ?? []), [state.commanders]);
   const [cx, cy] = corners.cartouche;
   const battleNode = battle ? nodeMap.get(battle) : undefined;
 
   return (
-    <div className="map-frame" onClick={() => { setSelected(null); setBattle(null); }}>
-      <svg className="map-svg map-static" viewBox={`0 0 ${MAP_W} ${MAP_H}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <div
+      ref={frameRef}
+      className={`map-frame ${view.k > 1 ? 'is-zoomed' : ''}`}
+      onPointerDown={onPointerDown}
+      onClickCapture={onClickCapture}
+      onDoubleClick={(e) => { if (e.target === e.currentTarget) reset(); }}
+      onClick={() => { setSelected(null); setBattle(null); }}
+    >
+      <svg className="map-svg map-static" viewBox={vb} preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <MapBase nodes={nodes} edges={edges} battle={state.battle ?? ''} date={state.date ?? ''} parchmentOk={parchmentOk} />
       </svg>
-      <TroopCanvas units={units} slots={slots} nodes={nodeMap} edges={edges} contested={contested} selectedId={selected} hoveredId={hovered} />
-      <svg className="map-svg map-live" viewBox={`0 0 ${MAP_W} ${MAP_H}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label={`Map of ${state.battle ?? 'the field'}`}>
+      <TroopCanvas units={units} slots={slots} nodes={nodeMap} edges={edges} contested={contested} selectedId={selected} hoveredId={hovered} view={view} />
+      <svg className="map-svg map-live" viewBox={vb} preserveAspectRatio="xMidYMid meet" role="img" aria-label={`Map of ${state.battle ?? 'the field'}`}>
         <defs>
           <pattern id="clio-contested" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <rect width="3" height="6" fill="#2f4b7c" />
@@ -204,16 +223,24 @@ export function MapView({ state }: { state: GameState }) {
         })}
 
         <CourierLayer couriers={state.couriers ?? []} commanders={state.commanders ?? []} turn={state.turn ?? 0} nodes={nodeMap} edges={edges} />
-        <UnitLayer units={units} slots={slots} nodes={nodeMap} edges={edges} selectedId={selected} onHover={setHovered} onSelect={setSelected} />
+        <UnitLayer units={units} slots={slots} nodes={nodeMap} edges={edges} selectedId={selected} onHover={setHovered} onSelect={setSelected} zoom={view.k} />
       </svg>
 
       <AnimatePresence>
-        {battleNode && contested.has(battleNode.id) && <BattleCard key={'battle-' + battleNode.id} state={state} node={battleNode} onClose={() => setBattle(null)} />}
+        {battleNode && contested.has(battleNode.id) && <BattleCard key={'battle-' + battleNode.id} state={state} node={battleNode} at={project(view, battleNode.x, battleNode.y)} onClose={() => setBattle(null)} />}
       </AnimatePresence>
 
       <AnimatePresence>
-        {shown && shownSlot && <UnitCard key={shown.id} unit={shown} commander={cmdById.get(shown.commanderId)} x={shownSlot.x} y={shownSlot.y} />}
+        {shown && shownAt && <UnitCard key={shown.id} unit={shown} commander={cmdById.get(shown.commanderId)} x={project(view, shownAt[0], shownAt[1])[0]} y={project(view, shownAt[0], shownAt[1])[1]} />}
       </AnimatePresence>
+
+      <div className="map-zoom" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+        <button type="button" onClick={() => zoomBy(1.6)} disabled={view.k >= MAX_ZOOM - 0.01} aria-label="Zoom in">+</button>
+        <span className="map-zoom-k">{view.k.toFixed(1)}×</span>
+        <button type="button" onClick={() => zoomBy(1 / 1.6)} disabled={view.k <= 1.001} aria-label="Zoom out">−</button>
+        <button type="button" className="map-zoom-home" onClick={reset} disabled={view.k <= 1.001} aria-label="Show the whole field">Whole field</button>
+      </div>
+      {view.k <= 1.001 && <div className="map-zoom-hint" aria-hidden="true">Scroll to zoom · drag to move</div>}
 
       <div className="map-legend" aria-hidden="true">
         <span className="lg lg-union">Union</span>

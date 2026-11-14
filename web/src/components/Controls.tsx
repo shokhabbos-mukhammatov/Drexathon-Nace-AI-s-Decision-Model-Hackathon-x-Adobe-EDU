@@ -58,7 +58,7 @@ function ControlsImpl({ state, connected, awaitingMe, post, onShowEnd, onShowTit
         <div className="clockface" aria-live="polite">
           <strong>{clock12(state.clock)}</strong>
           <span>
-            {ended ? 'nightfall' : busy ? (state.phase === 'deciding' ? 'commanders deciding' : 'the lines meet') : awaitingMe ? 'your order is awaited' : `turn ${state.turn} of ${state.maxTurns}`}
+            {ended ? 'nightfall' : busy ? (state.phase === 'deciding' ? 'commanders deciding' : 'the lines meet') : awaitingMe ? 'your order is waiting' : `turn ${state.turn} of ${state.maxTurns}`}
           </span>
         </div>
 

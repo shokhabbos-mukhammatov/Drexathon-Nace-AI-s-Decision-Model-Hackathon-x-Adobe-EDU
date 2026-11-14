@@ -18,13 +18,31 @@ function initials(name: string): string {
   return (parts.length > 1 ? parts[0][0] : '') + last[0];
 }
 
+// Where each face sits in its photograph, so the oval frames the face. Two of the seven are
+// full-length cartes de visite. Unknown commanders get a centred, upper-third crop.
+const FOCUS: Record<string, { at: string; zoom: number }> = {
+  lee: { at: '50% 30%', zoom: 1.15 },
+  longstreet: { at: '50% 33%', zoom: 1.75 },
+  hood: { at: '49% 33%', zoom: 1.7 },
+  meade: { at: '57% 22%', zoom: 2.5 },
+  sickles: { at: '52% 40%', zoom: 1.55 },
+  warren: { at: '49% 30%', zoom: 1.65 },
+  chamberlain: { at: '46% 30%', zoom: 1.1 },
+};
+
 export function Portrait({ commander, size = 62 }: { commander: Commander; size?: number }) {
   const [failed, setFailed] = useState(false);
   const showImg = !!commander.portrait && !failed;
   return (
     <span className={`portrait side-${commander.side}`} style={{ width: size, height: size * 1.24 }}>
       {showImg ? (
-        <img src={commander.portrait} alt={`Portrait of ${commander.name}`} onError={() => setFailed(true)} draggable={false} />
+        <img
+          src={commander.portrait}
+          alt={`Portrait of ${commander.name}`}
+          onError={() => setFailed(true)}
+          draggable={false}
+          style={{ objectPosition: (FOCUS[commander.id] ?? { at: '50% 28%' }).at, transformOrigin: (FOCUS[commander.id] ?? { at: '50% 28%' }).at, transform: `scale(${FOCUS[commander.id]?.zoom ?? 1.2})` }}
+        />
       ) : (
         <svg viewBox="0 0 100 124" aria-label={`Monogram of ${commander.name}`} role="img">
           <defs>
@@ -129,21 +147,25 @@ function CommanderPanelImpl({ commander, latest, clientId, waiting, post, onExpl
           onKeyDown={latest.explainable ? (e) => (e.key === 'Enter' || e.key === ' ') && onExplain(latest.id) : undefined}
           title={latest.explainable ? 'See which traits moved this decision' : undefined}
         >
-          <p className="q">
-            <span className="q-clock">{clock12(latest.clock)}</span>
-            {latest.question}
-          </p>
-          <ProbBars options={latest.options} chosen={latest.chosen} historical={latest.historical} max={4} />
+          {(() => {
+            const o = latest.options.find((x) => x.id === latest.chosen);
+            return (
+              <p className="cmd-latest" title={latest.question}>
+                <span className="q-clock">{clock12(latest.clock)}</span>
+                <strong>{o?.label ?? latest.chosen}</strong>
+                {latest.by !== 'human' && o && <span className="num">{Math.round((o.p ?? 0) * 100)}%</span>}
+              </p>
+            );
+          })()}
           <p className="cmd-foot">
-            <span className={`by by-${latest.by}`}>{latest.by === 'human' ? 'Decided by you' : latest.by === 'drex' ? 'Drex' : 'Mock decider'}</span>
-            {latest.by !== 'human' && latest.latencyMs > 0 && <span className="ms">{Math.round(latest.latencyMs)} ms</span>}
+            {latest.by === 'human' && <span className="by by-human">your order</span>}
             {latest.matchesHistory === true && <span className="mark mark-match">as in 1863</span>}
-            {latest.matchesHistory === false && <span className="mark mark-diverge">diverges</span>}
+            {latest.matchesHistory === false && <span className="mark mark-diverge">differs from 1863</span>}
             {latest.explainable && <span className="why">why?</span>}
           </p>
         </div>
       ) : (
-        <p className="cmd-idle">Awaiting the first decision.</p>
+        <p className="cmd-idle">No decision yet.</p>
       )}
 
       <footer className="cmd-actions">
@@ -152,7 +174,7 @@ function CommanderPanelImpl({ commander, latest, clientId, waiting, post, onExpl
         </button>
         {mine ? (
           <button type="button" className="btn-ink is-active" onClick={() => post('release', { commanderId: commander.id, clientId })}>
-            {waiting ? 'Your order is awaited' : 'Return to Drex'}
+            {waiting ? 'Your order is waiting' : 'Hand back to Drex'}
           </button>
         ) : (
           <button type="button" className="btn-ink" disabled={taken} onClick={() => post('claim', { commanderId: commander.id, clientId })} title={taken ? 'Another staff officer holds this command' : 'Decide in this commander’s place'}>

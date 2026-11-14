@@ -22,6 +22,8 @@ interface Props {
   contested: Set<string>;
   selectedId: string | null;
   hoveredId: string | null;
+  /** The window of the map on screen (see useMapView). */
+  view?: { x: number; y: number; k: number };
 }
 
 interface Dot { x: number; y: number; k: number }
@@ -124,9 +126,12 @@ function TroopCanvasImpl(props: Props) {
       raf = requestAnimationFrame(frame);
       // The first frame's timestamp can precede the moment the loop was started, so never go negative.
       const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now;
-      const { units, slots, nodes, edges, contested, selectedId, hoveredId } = latest.current;
-      ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      ctx.clearRect(0, 0, MAP_W, MAP_H);
+      const { units, slots, nodes, edges, contested, selectedId, hoveredId, view } = latest.current;
+      // Draw through the same window as the SVG layers, so soldiers stay sharp when zoomed in.
+      const zk = view?.k ?? 1;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(scale * zk, 0, 0, scale * zk, -(view?.x ?? 0) * scale * zk, -(view?.y ?? 0) * scale * zk);
 
       // The fallen lie where they fell.
       fallen = fallen.filter((f) => now - f.t < 90_000);
