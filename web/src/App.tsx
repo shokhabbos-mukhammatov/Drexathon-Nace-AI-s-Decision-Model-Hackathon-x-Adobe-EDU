@@ -6,6 +6,7 @@ import { CommanderPanel } from './components/CommanderPanel';
 import { Controls } from './components/Controls';
 import { EndPlate } from './components/EndPlate';
 import { ExplainCard } from './components/ExplainCard';
+import { HowItWorks } from './components/HowItWorks';
 import { Ledger } from './components/Ledger';
 import { MapView } from './components/Map';
 import { OrderSheet, type Reading } from './components/OrderSheet';
@@ -19,6 +20,8 @@ export default function App() {
   const { state, clientId, connected, post } = useGame();
   const [showTitle, setShowTitle] = useState(true);
   const [showEnd, setShowEnd] = useState(false);
+  // The explanatory page has its own address, #how-it-works, so it can be linked to.
+  const [showHow, setShowHow] = useState(() => window.location.hash === '#how-it-works');
   const [explain, setExplain] = useState<Decision | null>(null);
   const [reading, setReading] = useState<Reading | null>(null);
 
@@ -83,6 +86,13 @@ export default function App() {
   const closeEnd = useCallback(() => setShowEnd(false), []);
   const openEnd = useCallback(() => setShowEnd(true), []);
   const openTitle = useCallback(() => setShowTitle(true), []);
+  useEffect(() => {
+    const onHash = () => setShowHow(window.location.hash === '#how-it-works');
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  const openHow = useCallback(() => { setShowHow(true); window.history.replaceState(null, '', '#how-it-works'); }, []);
+  const closeHow = useCallback(() => { setShowHow(false); window.history.replaceState(null, '', window.location.pathname + window.location.search); }, []);
 
   const head = myPending[0];
   const headCommander = head ? commanders.find((c) => c.id === head.commanderId) : undefined;
@@ -91,7 +101,7 @@ export default function App() {
     <MotionConfig reducedMotion="user">
       {state && (
         <div className={`app phase-${state.phase} mode-${state.mode}`}>
-          <Controls state={state} connected={connected} awaitingMe={myPending.length > 0} post={post} onShowEnd={openEnd} onShowTitle={openTitle} />
+          <Controls state={state} connected={connected} awaitingMe={myPending.length > 0} post={post} onShowEnd={openEnd} onShowTitle={openTitle} onShowHow={openHow} />
 
           <aside className="col col-csa" aria-label="Confederate commanders">
             <h2 className="col-title">
@@ -135,7 +145,8 @@ export default function App() {
           {showEnd && state.phase === 'ended' && !explain && <EndPlate state={state} post={post} onClose={closeEnd} />}
         </div>
       )}
-      <AnimatePresence>{(showTitle || !state) && <Title key="title" state={state} connected={connected} onOpen={() => setShowTitle(false)} />}</AnimatePresence>
+      <AnimatePresence>{(showTitle || !state) && !showHow && <Title key="title" state={state} connected={connected} onOpen={() => setShowTitle(false)} onHow={openHow} />}</AnimatePresence>
+      {showHow && <HowItWorks onClose={closeHow} />}
     </MotionConfig>
   );
 }

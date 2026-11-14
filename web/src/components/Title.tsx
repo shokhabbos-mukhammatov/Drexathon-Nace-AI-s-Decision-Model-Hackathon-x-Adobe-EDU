@@ -6,9 +6,10 @@ interface Props {
   state: GameState | null;
   connected: boolean;
   onOpen: () => void;
+  onHow?: () => void;
 }
 
-export function Title({ state, connected, onOpen }: Props) {
+export function Title({ state, connected, onOpen, onHow }: Props) {
   const backdrop = useImageOk('/title.jpg');
   const ready = !!state;
   return (
@@ -47,6 +48,11 @@ export function Title({ state, connected, onOpen }: Props) {
         <button type="button" className="btn-seal btn-big" onClick={onOpen} disabled={!ready} autoFocus>
           {ready ? 'Open the map' : connected ? 'Unrolling the map…' : 'Riding to headquarters…'}
         </button>
+        {onHow && (
+          <button type="button" className="title-how" onClick={onHow}>
+            How it works
+          </button>
+        )}
         <p className={`title-link ${connected && ready ? 'is-up' : ''}`}>
           <i />
           {ready ? (state?.mode === 'drex' ? `Live on Drex${state.model ? ' · ' + state.model : ''}` : 'Offline rehearsal: the mock decider is standing in for Drex') : 'Connecting to the battle server'}

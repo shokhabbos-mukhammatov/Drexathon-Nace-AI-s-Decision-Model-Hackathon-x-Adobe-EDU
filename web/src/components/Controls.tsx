@@ -16,9 +16,10 @@ interface Props {
   post: (path: string, body?: unknown) => Promise<unknown>;
   onShowEnd: () => void;
   onShowTitle: () => void;
+  onShowHow: () => void;
 }
 
-function ControlsImpl({ state, connected, awaitingMe, post, onShowEnd, onShowTitle }: Props) {
+function ControlsImpl({ state, connected, awaitingMe, post, onShowEnd, onShowTitle, onShowHow }: Props) {
   const [speed, setSpeed] = useState('normal');
   const [menu, setMenu] = useState(false);
   const [seed, setSeed] = useState(String(state.seed ?? 1863));
@@ -93,6 +94,9 @@ function ControlsImpl({ state, connected, awaitingMe, post, onShowEnd, onShowTit
             The field at nightfall
           </button>
         )}
+        <button type="button" className="btn-ghost" onClick={onShowHow}>
+          How it works
+        </button>
         <div className="newgame" ref={menuRef}>
           <button type="button" className="btn-ghost" onClick={() => setMenu((v) => !v)} aria-expanded={menu}>
             New battle

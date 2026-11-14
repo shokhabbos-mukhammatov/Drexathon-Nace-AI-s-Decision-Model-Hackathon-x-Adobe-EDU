@@ -60,6 +60,10 @@ npm run dev             # http://localhost:5173
 Without keys it runs on an offline mock decider, clearly labelled, so the engine and interface
 can be tried anywhere.
 
+The app explains itself: **How it works** in the top bar (or `http://localhost:5173/#how-it-works`)
+opens a page with the parts, an architecture diagram, the sequence of one half hour, a worked
+decision, the document-to-commander pipeline and the measured figures.
+
 | Command | What it does |
 |---|---|
 | `npm run dev` | Server (port 8787) and web client (port 5173) |
