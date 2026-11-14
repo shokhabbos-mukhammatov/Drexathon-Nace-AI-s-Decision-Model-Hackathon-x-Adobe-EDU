@@ -1,12 +1,24 @@
 # Clio: pitch outline (five slides, five minutes)
 
-Build the deck in Adobe Express; use the Firefly title art and portraits. One idea per slide.
+Build the deck in Adobe Express; use the wartime portraits and the map. One idea per slide.
+
+## The story to tell (thirty seconds, before slide 1)
+
+Wide, the brother of a colleague, teaches historical battles at West Point. Cadets there study how commanders made decisions, and one way they learn is the staff ride: standing on a battlefield such as Gettysburg and asking, at each moment, what would you have done here, and why did he do what he did?
+
+That exercise needs a trip, a historian and a day, and it can only ever show the one way the battle went. Clio is built for that teaching problem: put a cadet in Longstreet's or Sickles's place, let them decide, and watch the other commanders answer in character, from their own documents.
+
+Rules for telling it, so the story stays true:
+- Say Clio is built for the kind of teaching Wide does. Do not say West Point uses it, endorses it, or took part, unless Wide has said so.
+- No West Point name, crest or photos on the slides as branding; say it in words.
+- If Wide gives you a reaction or a sentence you may quote, with their permission, it goes on slide 1 with their name and role as they want them written. That is worth more than any other line in the deck.
+- Ask before naming Wide at all.
 
 ## 1. The problem
 **Title:** A staff ride takes a bus, a historian and a day.
-- Armies and business schools walk Gettysburg to learn how commanders decide under pressure.
-- Most students never get one. A textbook tells you what happened, not what it was to decide it.
-- Visual: the title art, the word CLIO, "Stand where they stood."
+- At West Point, cadets learn command decisions from historical battles; a staff ride puts them on the ground at Gettysburg. (Wide teaches this.)
+- Most students never get one, and even those who do see only the one way it went. A textbook tells you what happened, not what it was to decide it.
+- Visual: the map, the word CLIO, "Stand where they stood." [Optional: Wide's quote, with permission.]
 
 ## 2. What Clio is
 **Title:** Every commander is an agent. Every decision is Drex.
@@ -33,6 +45,7 @@ Build the deck in Adobe Express; use the Firefly title art and portraits. One id
 
 ## 5. What is next
 **Title:** Any battle. Any decision worth rehearsing.
+- First: put it in front of instructors who teach command decisions, such as Wide, and build the battles they teach next. (Say "we will ask", not "we have agreed", unless that is true.)
 - A battle is one data file plus its documents.
 - The same pattern rehearses any documented decision under pressure: incident response, a negotiation, a boardroom.
 - Tools used: Drex, NDI, Intern, DeepInfra, Adobe Firefly and Express.
