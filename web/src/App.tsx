@@ -103,7 +103,6 @@ export default function App() {
               ))}
               {csa.length === 0 && <p className="col-empty">No commanders on this side.</p>}
             </div>
-            <Ledger ledger={state.ledger} mode={state.mode} model={state.model} />
           </aside>
 
           <main className="stage">
@@ -125,6 +124,8 @@ export default function App() {
           <footer className="foot">
             <Timeline state={state} />
             <Telegrams decisions={decisions} events={state.events ?? []} onExplain={onExplain} />
+            {/* The ledger sits in the footer so the whole height of each side column is the commanders'. */}
+            <Ledger ledger={state.ledger} mode={state.mode} model={state.model} />
           </footer>
 
           {(head || reading) && !showTitle && (

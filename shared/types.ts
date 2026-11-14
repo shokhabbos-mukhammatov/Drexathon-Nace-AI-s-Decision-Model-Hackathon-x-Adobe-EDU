@@ -49,6 +49,8 @@ export interface MapEdge {
   road?: string;
   /** Optional intermediate points so roads can bend. */
   via?: [number, number][];
+  /** Name of a stream this route has to ford. */
+  ford?: string;
 }
 
 export type UnitStatus = 'reserve' | 'ready' | 'marching' | 'engaged' | 'shaken' | 'routed' | 'spent';
@@ -88,6 +90,12 @@ export interface Unit {
   order?: UnitOrder;
   /** True until the unit has been released from reserve / arrived on the field. */
   inReserve?: boolean;
+  /**
+   * Set while the unit is on the road between two places. It still counts as being at
+   * `nodeId` until it arrives. `progress` is 0 to 1 along the route; `ground` says what the
+   * going is like, e.g. "across country, over boulders, fording Plum Run".
+   */
+  moving?: { to: string; progress: number; ground: string };
 }
 
 export type Tier = 'army' | 'corps' | 'brigade';

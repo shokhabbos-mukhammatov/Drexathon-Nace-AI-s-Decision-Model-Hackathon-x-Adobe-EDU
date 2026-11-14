@@ -64,7 +64,7 @@ function RiderImpl({ courier, turn, nodes, edges, names }: RiderProps) {
         transition={reduce ? { duration: 0 } : { x: { duration: 1.6, ease: 'easeInOut' }, y: { duration: 1.6, ease: 'easeInOut' }, opacity: { duration: courier.delivered ? 1.8 : 0.4, delay: courier.delivered ? 1.2 : 0 } }}
       >
         <title>{title}</title>
-        <g transform={`scale(${goingLeft ? -1 : 1} 1)`}>
+        <g transform={`scale(${goingLeft ? -1.5 : 1.5} 1.5)`}>
           <g className="gallop">
             <circle r={13} fill="#eadbb3" fillOpacity={0.85} stroke={ink} strokeWidth={1} />
             {/* horse and rider, drawn small */}
@@ -74,7 +74,7 @@ function RiderImpl({ courier, turn, nodes, edges, names }: RiderProps) {
             <path d="M-8 1l-2.6 2.2" stroke={ink} strokeWidth={1} strokeLinecap="round" />
           </g>
         </g>
-        <path d="M0 -13v-9l8 3l-8 3" fill={ink} stroke={ink} strokeWidth={0.8} strokeLinejoin="round" />
+        <path transform="scale(1.5)" d="M0 -13v-9l8 3l-8 3" fill={ink} stroke={ink} strokeWidth={0.8} strokeLinejoin="round" />
       </motion.g>
     </g>
   );

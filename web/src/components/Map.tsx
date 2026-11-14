@@ -110,6 +110,11 @@ function UnitCard({ unit, commander, x, y }: { unit: Unit; commander?: Commander
       <div className="uc-order">
         <span>Order</span> {unit.order?.label ?? 'None yet'}
       </div>
+      {unit.moving && (
+        <div className="uc-order">
+          <span>On the march</span> {Math.round(unit.moving.progress * 100)}% of the way, {unit.moving.ground}
+        </div>
+      )}
       {commander && (
         <div className="uc-chain">
           Takes orders from <em>{commander.name}</em>

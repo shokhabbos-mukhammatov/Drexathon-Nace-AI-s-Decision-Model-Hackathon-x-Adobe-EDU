@@ -28,8 +28,8 @@ Build the deck in Adobe Express; use the Firefly title art and portraits. One id
 - The same 30 decisions on a general 27B model on DeepInfra: 7 times the cost at its fastest (reasoning off, and it agreed with Drex on 29 of 30), 77 times the cost and 27 times slower when it thinks first.
 - Drex can only answer with a legal move, with a probability on each: nothing to parse, no invented orders, and the pull of history is visible on screen.
 - NDI read 1860s scans from archive.org and returned each trait with the sentence and page it came from. A teaching tool cannot make up its sources.
-- History fidelity on autopilot: 8 of 9 documented decisions with the NDI personas, 6 of 8 without. Without his persona, Hood just obeys.
-- Be ready for: "does Drex just know Gettysburg?" Partly, yes: Sickles advances even with no persona. The personas add the Hood and Longstreet exchange, and the player's own decisions are where it leaves the record.
+- History fidelity on autopilot (live Drex, seed 1863): 8 of 9 documented decisions with the NDI personas, 7 of 8 without. The count barely moves; what changes is the behaviour. With his persona Hood protests and is refused, as he was. Without it he ignores the order and goes around the Round Tops.
+- Be ready for: "does Drex just know Gettysburg?" Partly, yes: Sickles advances even with no persona, and the no-persona run ended the day closer to 1863 on the ground (5 of 5 key positions against 3 of 5). Do not claim the personas make it more accurate overall. Claim what is true: they make each commander act in character, with a cited source, and the player's own decisions are where it leaves the record.
 
 ## 5. What is next
 **Title:** Any battle. Any decision worth rehearsing.

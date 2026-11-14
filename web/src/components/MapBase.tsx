@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react';
 import type { MapEdge, MapNode } from '../../../shared/types';
 import { MAP_H, MAP_W, type Pt, byId, edgePoints, hash, polyLength, rng, smoothPath } from '../geo';
+import { Countryside } from './Countryside';
 
 const INK = '#2b2118';
 const INK_SOFT = '#5a4a3a';
@@ -335,7 +336,9 @@ function MapBaseImpl({ nodes, edges, battle, date, parchmentOk }: Props) {
     });
     const fr = rng(hash(nodes.map((n) => n.id).join(',')) || 7);
     const foxing = Array.from({ length: 26 }, () => ({ x: fr() * MAP_W, y: fr() * MAP_H, r: 6 + fr() * 34, o: 0.03 + fr() * 0.07 }));
-    return { nm, corners, angles, roads, labels, foxing };
+    // Keep the fields clear of the cartouche, compass and scale bar.
+    const avoid: Pt[] = [[corners.cartouche[0] + 200, corners.cartouche[1] + 75], [corners.compass[0] + 75, corners.compass[1] + 75], [corners.scale[0] + 150, corners.scale[1] + 27]];
+    return { nm, corners, angles, roads, labels, foxing, avoid };
   }, [nodes, edges]);
 
   const ticks: number[] = [];
@@ -389,6 +392,8 @@ function MapBaseImpl({ nodes, edges, battle, date, parchmentOk }: Props) {
           <path key={'gy' + v} d={`M30 ${v}H${MAP_W - 30}`} strokeDasharray="2 7" />
         ))}
       </g>
+
+      <Countryside nodes={nodes} avoid={model.avoid} />
 
       <g filter="url(#clio-rough)">
         {nodes.map((n) => (

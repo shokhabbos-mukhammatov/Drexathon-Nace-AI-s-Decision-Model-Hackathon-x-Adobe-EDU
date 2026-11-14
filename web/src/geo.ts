@@ -131,6 +131,39 @@ export function smoothPath(pts: Pt[]): string {
   return d;
 }
 
+/**
+ * The same curve smoothPath draws, as closely spaced points, so that anything travelling a road
+ * stays on the line the road is drawn with.
+ */
+export function curvePoints(pts: Pt[], step = 7): Pt[] {
+  if (pts.length < 3) {
+    if (pts.length < 2) return pts.slice();
+    const [a, b] = pts; const n = Math.max(1, Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) / step));
+    return Array.from({ length: n + 1 }, (_, i) => [a[0] + ((b[0] - a[0]) * i) / n, a[1] + ((b[1] - a[1]) * i) / n] as Pt);
+  }
+  const out: Pt[] = [pts[0]];
+  let from = pts[0];
+  for (let i = 1; i < pts.length - 1; i++) {
+    const c = pts[i]; const to: Pt = [(pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2];
+    const n = Math.max(2, Math.round((Math.hypot(c[0] - from[0], c[1] - from[1]) + Math.hypot(to[0] - c[0], to[1] - c[1])) / step));
+    for (let k = 1; k <= n; k++) {
+      const t = k / n; const u = 1 - t;
+      out.push([u * u * from[0] + 2 * u * t * c[0] + t * t * to[0], u * u * from[1] + 2 * u * t * c[1] + t * t * to[1]]);
+    }
+    from = to;
+  }
+  const last = pts[pts.length - 1];
+  const n = Math.max(1, Math.round(Math.hypot(last[0] - from[0], last[1] - from[1]) / step));
+  for (let k = 1; k <= n; k++) out.push([from[0] + ((last[0] - from[0]) * k) / n, from[1] + ((last[1] - from[1]) * k) / n]);
+  return out;
+}
+
+/** The road from one place to the next as it is drawn, starting at `from`. */
+export function roadCurve(edges: MapEdge[], nodes: Map<string, MapNode>, from: string, to: string): Pt[] {
+  const e = findEdge(edges, from, to);
+  return e ? curvePoints(edgePoints(e, nodes, from)) : [];
+}
+
 export function linePath(pts: Pt[]): string {
   return pts.length ? 'M' + pts.map((p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' L') : '';
 }
@@ -143,7 +176,7 @@ export function unitWidth(u: Unit): number {
 /** One dot on the map stands for about this many men. */
 export const DOT_MEN = 50;
 /** Spacing between dots in a formed line, in map units. */
-export const DOT_GAP = 5;
+export const DOT_GAP = 6.6;
 /** Ranks deep in line of battle. */
 export const RANKS = 4;
 
@@ -184,14 +217,14 @@ export function computeSlots(units: Unit[], nodes: Map<string, MapNode>): Map<st
     list.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     const dir = list[0].side === 'confederate' ? -1 : 1;
     const perCol = 2;
-    const gap = 24; // room for the label under each line
+    const gap = 32; // room for the label under each line
     for (let c = 0; c * perCol < list.length; c++) {
       const col = list.slice(c * perCol, c * perCol + perCol);
       const total = col.reduce((a, u) => a + frontOf(u), 0) + gap * (col.length - 1);
       let y = n.y - total / 2 - 4;
       for (const u of col) {
         const front = frontOf(u);
-        const x = n.x + dir * (36 + c * 56);
+        const x = n.x + dir * (48 + c * 74);
         slots.set(u.id, {
           x: Math.max(30, Math.min(MAP_W - 30, x)),
           y: Math.max(30 + front / 2, Math.min(MAP_H - 40 - front / 2, y + front / 2)),

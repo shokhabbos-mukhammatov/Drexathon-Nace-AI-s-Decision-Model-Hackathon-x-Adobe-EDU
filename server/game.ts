@@ -43,6 +43,10 @@ interface UnitMeta {
   movedInto?: string; // node entered this turn
   routedUntil?: number;
   engagedTurns: number;
+  /** The place it is marching to next, and how far along that road it has got (0 to 1). */
+  hop?: string;
+  progress: number;
+  carry: number;
 }
 interface CmdMeta {
   seed: CommanderSeed;
@@ -106,7 +110,7 @@ export class Game {
       };
     });
     const units: Unit[] = UNITS.map((u) => {
-      this.umeta.set(u.id, { seed: u, route: 0, stance: 'hold', engagedTurns: 0 });
+      this.umeta.set(u.id, { seed: u, route: 0, stance: 'hold', engagedTurns: 0, progress: 0, carry: 0 });
       const marched = u.commanderId === 'hood' || u.commanderId === 'longstreet';
       return {
         id: u.id, name: u.name, short: u.short, side: u.side, leader: u.leader, commanderId: u.commanderId, agentId: u.agentId,
@@ -216,7 +220,31 @@ export class Game {
   }
 
   private describeUnit(u: Unit) {
-    return `${u.name} (${u.strength} men, ${moraleWord(u.morale)}, ${fatigueWord(u.fatigue)}, ${ammoWord(u.ammo)}) at ${this.nodeName(u.nodeId)}${u.status === 'engaged' ? ', engaged' : ''}`;
+    const where = u.moving
+      ? `on the march from ${this.nodeName(u.nodeId)} to ${this.nodeName(u.moving.to)}, about ${Math.round(u.moving.progress * 100)} per cent of the way (${u.moving.ground})`
+      : `at ${this.nodeName(u.nodeId)}`;
+    return `${u.name} (${u.strength} men, ${moraleWord(u.morale)}, ${fatigueWord(u.fatigue)}, ${ammoWord(u.ammo)}) ${where}${u.status === 'engaged' ? ', engaged' : ''}`;
+  }
+
+  /**
+   * How many half hours a body of troops needs to get from one place to the next, and why.
+   * A good road is quick; woods, boulders and slopes are slow; a stream has to be forded; tired
+   * men march slower. One means it arrives within the half hour.
+   */
+  private marchCost(u: Unit, from: string, to: string): { cost: number; ground: string } {
+    const e = EDGES.find((x) => (x.a === from && x.b === to) || (x.a === to && x.b === from));
+    const a = this.node(from); const b = this.node(to);
+    const pts: [number, number][] = [[a.x, a.y], ...((e?.via ?? []) as [number, number][]), [b.x, b.y]];
+    let len = 0;
+    for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    const terrain: Record<string, [number, string]> = {
+      open: [1, ''], farm: [1, ''], ridge: [1.1, 'up the ridge'], woods: [1.25, 'through woods'], rocks: [1.4, 'over boulders'], hill: [1.45, 'up a steep, rocky slope'],
+    };
+    const [terr, word] = terrain[b.terrain] ?? [1, ''];
+    const tired = 1 + u.fatigue / 300;
+    const cost = Math.max(0.45, len / 640) * (e?.road ? 0.7 : 1) * terr * tired + (e?.ford ? 0.15 : 0);
+    const ground = [e?.road ? `by the ${e.road}` : 'across country', word, e?.ford ? `fording ${e.ford}` : '', tired > 1.2 ? 'the men tired' : ''].filter(Boolean).join(', ');
+    return { cost, ground };
   }
   /** What a commander on this side can see: own troops, and the enemy within one road of them. */
   private situation(side: Side) {
@@ -768,15 +796,25 @@ export class Game {
     for (const u of this.state.units) {
       if (!this.alive(u)) continue;
       const um = this.umeta.get(u.id)!;
-      if (u.status === 'routed') { const fb = this.fallbackNode(u); if (fb && this.at(u.nodeId, other(u.side)).length) moves.push([u, fb]); continue; }
-      if (!um.destination || um.destination === u.nodeId) continue;
-      if (this.contested(u.nodeId) && u.order?.type !== 'fall_back') continue; // locked in the fight
+      const halt = () => { u.moving = undefined; um.hop = undefined; um.progress = 0; um.carry = 0; };
+      if (u.status === 'routed') { halt(); const fb = this.fallbackNode(u); if (fb && this.at(u.nodeId, other(u.side)).length) moves.push([u, fb]); continue; }
+      if (!um.destination || um.destination === u.nodeId) { halt(); continue; }
+      if (this.contested(u.nodeId) && u.order?.type !== 'fall_back') { halt(); continue; } // locked in the fight
       const p = this.pathTo(u.nodeId, um.destination, u.side);
-      if (p.length > 1) moves.push([u, p[1]]);
+      if (p.length < 2) { halt(); continue; }
+      const hop = p[1];
+      if (um.hop !== hop) { um.hop = hop; um.progress = um.carry; }
+      um.carry = 0;
+      // Ground decides how far the column gets in half an hour; it may still be on the road at the end of it.
+      const { cost, ground } = this.marchCost(u, u.nodeId, hop);
+      um.progress += 1 / cost;
+      u.fatigue = Math.min(100, u.fatigue + 6);
+      if (um.progress >= 1) { um.carry = Math.min(0.5, um.progress - 1); moves.push([u, hop]); }
+      else { u.moving = { to: hop, progress: um.progress, ground }; u.status = 'marching'; }
     }
     for (const [u, to] of moves) {
-      u.nodeId = to; u.fatigue = Math.min(100, u.fatigue + 6);
-      const um = this.umeta.get(u.id)!; um.movedInto = to;
+      u.nodeId = to; u.moving = undefined;
+      const um = this.umeta.get(u.id)!; um.movedInto = to; um.hop = undefined; um.progress = 0;
       if (u.status !== 'routed') u.status = 'marching';
       if (um.destination === to) um.destination = undefined;
       if (u.agentId) this.cmd(u.agentId).nodeId = to;

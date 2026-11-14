@@ -113,7 +113,8 @@ ol {
 .bar,
 .col,
 .timeline,
-.wire {
+.wire,
+.foot .ledger {
   background-color: var(--paper);
   background-image: var(--grain), var(--fibre), linear-gradient(180deg, rgba(255, 248, 225, 0.5), rgba(120, 80, 30, 0.08));
   background-size: 240px 240px, 600px 300px, 100% 100%;
@@ -1098,6 +1099,17 @@ ol {
   pointer-events: none;
 }
 
+/* what the going is like, under a column on the road */
+.unit-ground {
+  font-family: var(--f-fell);
+  font-style: italic;
+  fill: #5a4a3a;
+  paint-order: stroke;
+  stroke: #e9d9ae;
+  stroke-width: 2.6px;
+  stroke-linejoin: round;
+}
+
 .unit-count {
   font-family: var(--f-type);
   fill: #5a4a3a;
@@ -1218,11 +1230,15 @@ ol {
 
 .map-legend {
   position: absolute;
-  left: 50%;
-  top: 3.3%;
+  /* along the bottom margin, clear of the town at the top of the sheet */
+  left: 46%;
+  bottom: 3.6%;
   transform: translateX(-50%);
   display: flex;
   gap: 16px;
+  padding: 3px 12px;
+  background: rgba(233, 219, 178, 0.88);
+  border: 1px solid rgba(43, 33, 24, 0.45);
   font-family: var(--f-fell);
   font-style: italic;
   font-size: clamp(9px, 0.8vw, 12.5px);
@@ -1374,9 +1390,68 @@ ol {
 .foot {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: 430px minmax(0, 1fr);
+  grid-template-columns: clamp(300px, 23vw, 430px) minmax(0, 1fr) clamp(380px, 31vw, 600px);
   gap: var(--gap);
   min-height: 0;
+}
+
+/* The ledger in the footer: figures in two columns, the ratios beside them. */
+.foot .ledger {
+  margin-top: 0;
+  padding: 12px 18px 10px;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  column-gap: 16px;
+  align-content: start;
+}
+
+.foot .ledger header,
+.foot .ledger .ledger-model {
+  grid-column: 1 / -1;
+}
+
+.foot .ledger .ledger-model {
+  margin: 0 0 2px;
+}
+
+.foot .ledger table {
+  grid-column: 1;
+  align-self: start;
+}
+
+.foot .ledger tbody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  grid-template-rows: repeat(3, auto);
+  grid-auto-flow: column;
+  column-gap: 20px;
+}
+
+.foot .ledger tr {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.foot .ledger tr.total td,
+.foot .ledger tr.total th {
+  border-top: 0;
+}
+
+.foot .ledger-ratio {
+  grid-column: 2;
+  grid-row: 3;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  margin: 0;
+  padding-left: 14px;
+  border-left: 1px solid rgba(43, 33, 24, 0.4);
+  text-align: right;
 }
 
 .timeline {
@@ -2671,7 +2746,7 @@ ol {
   }
 
   .foot {
-    grid-template-columns: 350px minmax(0, 1fr);
+    grid-template-columns: clamp(280px, 24vw, 350px) minmax(0, 1fr) clamp(350px, 31vw, 480px);
   }
 
   .brand-name {

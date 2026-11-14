@@ -26,11 +26,15 @@ arithmetic (seeded, so a run is repeatable) and the turn sequence.
 
 ## The battle
 
-Gettysburg, July 2, 1863, 3:00 PM to dusk, on the southern end of the field: 17 locations,
+Gettysburg, July 2, 1863, 2:30 PM to dusk, on the southern end of the field: 17 locations,
 24 brigades, 7 commanders with personas (Lee, Longstreet, Hood, Meade, Sickles, Warren,
 Chamberlain). Strengths, positions, the timeline and the documented decisions are sourced in
 [docs/research/gettysburg-sources.md](docs/research/gettysburg-sources.md). Another battle is
 another data file like [server/data/gettysburg.ts](server/data/gettysburg.ts).
+
+Ground matters: how far a column gets in a half hour depends on the road, the terrain it is
+entering (woods, boulders, a steep slope), any stream it has to ford, and how tired the men
+are, so a brigade is often still on the road when the half hour ends.
 
 How the agents coordinate:
 
